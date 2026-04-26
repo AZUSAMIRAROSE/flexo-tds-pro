@@ -14,6 +14,7 @@ interface TDSFormState {
   removeUnit: (index: number) => void
   resetForm: () => void
   markClean: () => void
+  initData: (data: Partial<TDSRecordWithRelations>, units: TDSUnit[]) => void
 }
 
 export const useTDSFormStore = create<TDSFormState>((set) => ({
@@ -68,4 +69,7 @@ export const useTDSFormStore = create<TDSFormState>((set) => ({
 
   markClean: () =>
     set({ isDirty: false }),
+
+  initData: (data, units) =>
+    set({ formData: data, units, isDirty: false }),
 }))

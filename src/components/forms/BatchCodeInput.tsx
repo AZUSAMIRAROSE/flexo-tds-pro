@@ -4,7 +4,7 @@ import { Input } from '@/components/ui/input'
 import { cn } from '@/lib/utils'
 import { Loader2 } from 'lucide-react'
 
-interface BatchCodeInputProps {
+interface BatchCodeInputProps extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'value' | 'onChange'> {
   value: string
   onChange: (value: string) => void
   onBlur?: () => void
@@ -18,6 +18,7 @@ export function BatchCodeInput({
   onBlur,
   placeholder = 'Enter batch code...',
   className,
+  ...props
 }: BatchCodeInputProps) {
   const [focused, setFocused] = useState(false)
   const [query, setQuery] = useState('')
@@ -55,6 +56,7 @@ export function BatchCodeInput({
         }}
         placeholder={placeholder}
         className={cn('batch-code-highlight font-mono', className)}
+        {...props}
       />
       
       {showSuggestions && (

@@ -42,7 +42,7 @@ export default function TDSEditor() {
   const { user, isAdmin, isTechnicalOfficer } = useAuth()
   const isNew = !id
 
-  const { formData, units, setFormData, setUnits, resetForm, isDirty, markClean } = useTDSFormStore()
+  const { formData, units, setFormData, setUnits, resetForm, isDirty, markClean, initData } = useTDSFormStore()
   const { data: tdsRecord, isLoading } = useTDSRecord(id)
   const { data: customers } = useCustomers()
   const { data: allMachines } = useMachines()
@@ -53,6 +53,7 @@ export default function TDSEditor() {
 
   const [saving, setSaving] = useState(false)
   const [selectedCustomerId, setSelectedCustomerId] = useState<string>('')
+  const [activeSubTab, setActiveSubTab] = useState('job')
 
   const { exportToExcel, exportToPDF, exportToWord, exporting } = useExport(id || '')
 
@@ -62,8 +63,7 @@ export default function TDSEditor() {
   // Load existing TDS data
   useEffect(() => {
     if (tdsRecord) {
-      setFormData(tdsRecord)
-      setUnits(tdsRecord.units || [])
+      initData(tdsRecord, tdsRecord.units || [])
       setSelectedCustomerId(tdsRecord.customer_id || '')
     } else if (isNew) {
       resetForm()
@@ -73,7 +73,7 @@ export default function TDSEditor() {
         anilox_unit: 'LPI',
         volume_unit: 'CCM',
       }))
-      setUnits(defaultUnits as any)
+      initData(formData, defaultUnits as any)
     }
 
     return () => {
@@ -318,7 +318,7 @@ export default function TDSEditor() {
         </div>
 
         {/* Main Layout: Form + Sidebar */}
-        <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_320px] gap-6 items-start">
           {/* Main Form */}
           <Tabs defaultValue="form" className="space-y-6">
             <TabsList className="glass-panel border-white/5 p-1 h-auto inline-flex rounded-lg">
@@ -328,49 +328,51 @@ export default function TDSEditor() {
 
             <TabsContent value="form" className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
               {/* Header Section */}
-            <div className="glass-panel border-primary/20 p-6 md:p-8 space-y-6 relative overflow-hidden">
+            <div className="glass-panel border-primary/20 p-4 md:p-6 space-y-4 relative overflow-hidden rounded-xl">
               <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3"></div>
               
-              <div className="text-center relative z-10">
-                <div className="space-y-2 mb-8 max-w-md mx-auto">
-                  <Label className="label-caps text-muted-foreground">Client Identifier</Label>
-                  <Select
-                    value={selectedCustomerId}
-                    onValueChange={(value) => {
-                      setSelectedCustomerId(value)
-                      setFormData({ ...formData, customer_id: value, machine_id: undefined })
-                    }}
-                    disabled={!canEdit()}
-                  >
-                    <SelectTrigger className="bg-background/50 border-white/10 h-12 text-lg">
-                      <SelectValue placeholder="Select Target Client" />
-                    </SelectTrigger>
-                    <SelectContent className="glass-modal border-white/10">
-                      {customers?.map((customer) => (
-                        <SelectItem key={customer.id} value={customer.id}>
-                          {customer.name}{customer.location && <span className="text-muted-foreground ml-2">[{customer.location}]</span>}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+              <div className="relative z-10">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4 border-b border-white/10 pb-4">
+                  <div>
+                    <h2 className="text-lg md:text-xl font-black text-foreground tracking-[0.15em] uppercase">
+                      FLEXO NARROW WEB
+                    </h2>
+                    <p className="text-primary tracking-[0.2em] text-xs font-semibold mt-0.5">TECHNICAL DATA SHEET</p>
+                  </div>
                 </div>
 
-                <div className="inline-block border-y border-white/10 py-4 w-full mb-8">
-                  <h2 className="text-2xl md:text-3xl font-black text-foreground tracking-[0.2em] uppercase">
-                    FLEXO NARROW WEB
-                  </h2>
-                  <p className="text-primary tracking-[0.3em] text-sm font-semibold mt-2">TECHNICAL DATA SHEET</p>
-                </div>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-5 text-left">
+                  <div className="space-y-1.5">
+                    <Label className="label-caps text-muted-foreground text-[10px]">Client Identifier</Label>
+                    <Select
+                      value={selectedCustomerId}
+                      onValueChange={(value) => {
+                        setSelectedCustomerId(value)
+                        setFormData({ ...formData, customer_id: value, machine_id: undefined })
+                      }}
+                      disabled={!canEdit()}
+                    >
+                      <SelectTrigger className="bg-background/50 border-white/10 h-10">
+                        <SelectValue placeholder="Select Target Client" />
+                      </SelectTrigger>
+                      <SelectContent className="glass-modal border-white/10">
+                        {customers?.map((customer) => (
+                          <SelectItem key={customer.id} value={customer.id}>
+                            {customer.name}{customer.location && <span className="text-muted-foreground ml-2">[{customer.location}]</span>}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-left">
-                  <div className="space-y-2">
-                    <Label className="label-caps text-muted-foreground">Hardware Unit</Label>
+                  <div className="space-y-1.5">
+                    <Label className="label-caps text-muted-foreground text-[10px]">Hardware Unit</Label>
                     <Select
                       value={formData.machine_id || ''}
                       onValueChange={handleMachineChange}
                       disabled={!selectedCustomerId || !canEdit()}
                     >
-                      <SelectTrigger className="bg-background/50 border-white/10">
+                      <SelectTrigger className="bg-background/50 border-white/10 h-10">
                         <SelectValue placeholder="Assign Hardware" />
                       </SelectTrigger>
                       <SelectContent className="glass-modal border-white/10">
@@ -386,8 +388,8 @@ export default function TDSEditor() {
                     </Select>
                   </div>
 
-                  <div className="space-y-2">
-                    <Label className="label-caps text-muted-foreground">System Designation</Label>
+                  <div className="space-y-1.5">
+                    <Label className="label-caps text-muted-foreground text-[10px]">System Designation</Label>
                     <div className="h-10 px-3 py-2 border border-white/5 rounded-md bg-white/[0.02] flex items-center text-sm font-mono text-muted-foreground/80">
                       {machines.find(m => m.id === formData.machine_id)?.machine_name || 'SIEGWERK INDIA PVT. LTD.'}
                     </div>
@@ -408,11 +410,32 @@ export default function TDSEditor() {
             )}
 
             {/* Form Sections */}
-            <div className="space-y-6">
-              <JobInfoSection />
-              <SubstrateSection />
-              <UnitSequenceTable />
-              <QualitySection />
+            <div className="space-y-6 mt-8">
+              <div className="glass-panel border-white/5 p-1 flex flex-wrap rounded-lg gap-1">
+                {['job', 'substrate', 'printing', 'quality'].map((tab) => (
+                  <button
+                    key={tab}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      setActiveSubTab(tab);
+                    }}
+                    className={`flex-1 px-4 py-2.5 rounded-md font-semibold tracking-wide text-xs md:text-sm transition-all uppercase ${
+                      activeSubTab === tab 
+                        ? 'bg-primary/20 text-primary shadow-sm' 
+                        : 'text-muted-foreground hover:bg-white/5 hover:text-foreground'
+                    }`}
+                  >
+                    {tab === 'job' ? 'JOB INFO' : tab === 'substrate' ? 'SUBSTRATE' : tab === 'printing' ? 'PRINTING' : 'QUALITY'}
+                  </button>
+                ))}
+              </div>
+              
+              <div className="mt-6 animate-in fade-in slide-in-from-bottom-4 duration-300">
+                {activeSubTab === 'job' && <JobInfoSection />}
+                {activeSubTab === 'substrate' && <SubstrateSection />}
+                {activeSubTab === 'printing' && <UnitSequenceTable />}
+                {activeSubTab === 'quality' && <QualitySection />}
+              </div>
             </div>
 
               {/* Footer */}

@@ -9,9 +9,8 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { Badge } from '@/components/ui/badge'
-import { User, LogOut, Settings, FileText, Layers } from 'lucide-react'
+import { User, LogOut, Settings, Plus, Search, Bell } from 'lucide-react'
 import { toast } from '@/components/ui/use-toast'
-import { cn } from '@/lib/utils'
 
 export default function Header() {
   const { user, signOut, isAdmin, isTechnicalOfficer } = useAuth()
@@ -20,100 +19,91 @@ export default function Header() {
   const handleSignOut = async () => {
     const { error } = await signOut()
     if (error) {
-      toast({
-        variant: 'destructive',
-        title: 'Sign out failed',
-        description: error.message,
-      })
+      toast({ variant: 'destructive', title: 'Sign out failed', description: error.message })
     } else {
-      toast({
-        title: 'Signed out',
-        description: 'You have been successfully signed out.',
-      })
+      toast({ title: 'Signed out', description: 'You have been successfully signed out.' })
     }
   }
 
   const getRoleBadge = () => {
-    if (isAdmin()) return <Badge variant="destructive" className="label-caps px-2 py-0">ADMIN</Badge>
-    if (isTechnicalOfficer()) return <Badge variant="secondary" className="label-caps px-2 py-0 bg-secondary/10 text-secondary border-secondary/20">TECH_OFFICER</Badge>
-    return <Badge variant="outline" className="label-caps px-2 py-0">VIEWER</Badge>
+    if (isAdmin()) return <Badge variant="destructive" className="text-[10px] uppercase tracking-wider px-2 py-0">Admin</Badge>
+    if (isTechnicalOfficer()) return <Badge variant="secondary" className="text-[10px] uppercase tracking-wider px-2 py-0 bg-secondary/10 text-secondary border-secondary/20">Tech Officer</Badge>
+    return <Badge variant="outline" className="text-[10px] uppercase tracking-wider px-2 py-0">Viewer</Badge>
   }
 
-  const navItems = [
-    { name: 'Dashboard', path: '/dashboard' },
-    { name: 'TDS Records', path: '/tds' },
-    { name: 'Customers', path: '/customers' },
-    { name: 'Machines', path: '/machines' },
-  ]
+  // Determine page title based on path
+  const getPageTitle = () => {
+    if (location.pathname.startsWith('/dashboard')) return 'Dashboard'
+    if (location.pathname.startsWith('/tds')) return 'TDS Records'
+    if (location.pathname.startsWith('/customers')) return 'Customers'
+    if (location.pathname.startsWith('/machines')) return 'Machines'
+    if (location.pathname.startsWith('/settings')) return 'Settings'
+    return 'FlexoTDS Pro'
+  }
 
   return (
-    <header className="sticky top-0 z-50 w-full glass-panel border-b-0 rounded-none mb-6">
-      <div className="container mx-auto max-w-7xl flex h-16 items-center justify-between px-4 md:px-8">
-        {/* Logo & Title */}
-        <Link to="/dashboard" className="flex items-center space-x-3 group">
-          <div className="flex items-center justify-center w-10 h-10 rounded shadow-[0_0_15px_rgba(99,102,241,0.5)] bg-primary text-primary-foreground font-bold text-lg transition-transform group-hover:scale-105">
-            <Layers className="h-5 w-5" />
+    <header className="sticky top-0 z-40 w-full bg-[#09090b]/80 backdrop-blur-md border-b border-white/5">
+      <div className="flex h-16 items-center justify-between px-4 md:px-8">
+        {/* Page Title & Search */}
+        <div className="flex items-center gap-6 flex-1">
+          <h2 className="text-xl font-semibold text-foreground tracking-tight hidden sm:block">
+            {getPageTitle()}
+          </h2>
+          
+          <div className="relative max-w-md flex-1 hidden md:block">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <input 
+              type="text" 
+              placeholder="Search records, customers, or machines..." 
+              className="w-full bg-white/5 border border-white/10 rounded-full pl-10 pr-4 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-transparent transition-all placeholder:text-muted-foreground/50"
+            />
           </div>
-          <div>
-            <h1 className="text-xl font-bold tracking-tight text-foreground group-hover:text-primary transition-colors">Flexo<span className="text-primary">TDS</span> Pro</h1>
-            <p className="label-caps text-muted-foreground">Industrial Specs</p>
-          </div>
-        </Link>
+        </div>
 
-        {/* Navigation */}
-        <nav className="hidden md:flex items-center space-x-1">
-          {navItems.map((item) => {
-            const isActive = location.pathname.startsWith(item.path)
-            return (
-              <Link
-                key={item.path}
-                to={item.path}
-                className={cn(
-                  "px-4 py-2 rounded-md text-sm font-medium transition-all duration-200",
-                  isActive 
-                    ? "bg-white/10 text-primary shadow-[inset_0_-2px_0_0_hsl(var(--primary))]" 
-                    : "text-muted-foreground hover:bg-white/5 hover:text-foreground"
-                )}
-              >
-                {item.name}
-              </Link>
-            )
-          })}
-        </nav>
+        {/* Right Actions */}
+        <div className="flex items-center gap-4">
+          <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-foreground relative rounded-full">
+            <Bell className="h-5 w-5" />
+            <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-primary rounded-full ring-2 ring-background"></span>
+          </Button>
 
-        {/* User Menu */}
-        <div className="flex items-center space-x-4">
-          <Link to="/tds/new">
-            <Button variant="default" size="sm" className="hidden md:flex shadow-[0_0_15px_rgba(99,102,241,0.3)] hover:shadow-[0_0_20px_rgba(99,102,241,0.5)] transition-all">
-              <FileText className="mr-2 h-4 w-4" />
-              <span className="font-semibold tracking-wide">NEW TDS</span>
+          <Link to="/tds/new" className="hidden sm:block">
+            <Button size="sm" className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-[0_0_15px_rgba(99,102,241,0.4)] hover:shadow-[0_0_20px_rgba(99,102,241,0.6)] transition-all rounded-full px-4">
+              <Plus className="mr-2 h-4 w-4" />
+              New TDS
             </Button>
           </Link>
 
+          <div className="h-6 w-px bg-white/10 mx-1 hidden sm:block"></div>
+
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm" className="flex items-center space-x-2 bg-transparent border-white/10 hover:bg-white/5 hover:text-primary transition-colors">
-                <User className="h-4 w-4" />
-                <span className="hidden md:inline">{user?.fullName}</span>
+              <Button variant="ghost" className="relative h-9 w-9 rounded-full p-0 overflow-hidden ring-1 ring-white/10 hover:ring-white/30 transition-all">
+                <div className="absolute inset-0 bg-gradient-to-tr from-primary/20 to-primary/5"></div>
+                <User className="h-5 w-5 text-foreground/80 relative z-10" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56 glass-modal border-white/10">
-              <div className="flex items-center justify-between p-2">
-                <div className="space-y-1">
-                  <p className="text-sm font-medium">{user?.fullName}</p>
-                  <p className="text-xs text-muted-foreground">{user?.email}</p>
+            <DropdownMenuContent align="end" className="w-64 bg-[#18181b] border-white/10 shadow-2xl rounded-xl p-2">
+              <div className="flex items-center gap-3 p-2 mb-2">
+                <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center border border-primary/20">
+                  <User className="h-5 w-5 text-primary" />
                 </div>
+                <div className="flex flex-col space-y-0.5">
+                  <p className="text-sm font-semibold text-foreground leading-none">{user?.fullName || 'User'}</p>
+                  <p className="text-xs text-muted-foreground leading-none truncate max-w-[140px]">{user?.email}</p>
+                </div>
+              </div>
+              <div className="px-2 pb-2">
                 {getRoleBadge()}
               </div>
-              <DropdownMenuSeparator className="bg-white/10" />
-              <DropdownMenuItem asChild className="focus:bg-white/10 focus:text-primary cursor-pointer">
-                <Link to="/settings" className="w-full">
-                  <Settings className="mr-2 h-4 w-4" />
-                  Settings
+              <DropdownMenuSeparator className="bg-white/5 mb-1" />
+              <DropdownMenuItem asChild className="rounded-lg cursor-pointer focus:bg-white/5 focus:text-foreground">
+                <Link to="/settings" className="w-full flex items-center py-2">
+                  <Settings className="mr-2 h-4 w-4 text-muted-foreground" />
+                  Account Settings
                 </Link>
               </DropdownMenuItem>
-              <DropdownMenuSeparator className="bg-white/10" />
-              <DropdownMenuItem onClick={handleSignOut} className="focus:bg-destructive/20 focus:text-destructive cursor-pointer text-destructive">
+              <DropdownMenuItem onClick={handleSignOut} className="rounded-lg cursor-pointer focus:bg-destructive/10 focus:text-destructive text-destructive py-2 mt-1">
                 <LogOut className="mr-2 h-4 w-4" />
                 Sign Out
               </DropdownMenuItem>

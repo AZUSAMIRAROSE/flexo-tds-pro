@@ -41,7 +41,7 @@ export function UnitLookupSidebar() {
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              {units.map((unit) => (
+              {[...units].sort((a, b) => a.unit_no - b.unit_no).map((unit) => (
                 <SelectItem key={unit.unit_no} value={unit.unit_no.toString()}>
                   Unit {unit.unit_no}
                 </SelectItem>
@@ -90,10 +90,10 @@ export function UnitLookupSidebar() {
               </div>
             </div>
 
-            <div className="space-y-1 p-2 rounded bg-accent/50">
-              <span className="text-muted-foreground">Batch Code:</span>
-              <div className="batch-code-highlight font-mono text-sm font-semibold inline-block px-2 py-1 rounded">
-                {selectedUnit.batch_code || 'Not assigned'}
+            <div className="space-y-1.5 p-3 rounded-md bg-white/[0.03] border border-white/10 mt-2 mb-2">
+              <span className="text-muted-foreground text-xs font-semibold uppercase tracking-wider">Batch Code</span>
+              <div className="font-mono text-base font-bold text-white bg-primary/20 border border-primary/30 px-3 py-1.5 rounded block w-full text-center break-all shadow-[inset_0_1px_3px_rgba(0,0,0,0.2)]">
+                {selectedUnit.batch_code || 'UNASSIGNED'}
               </div>
             </div>
 
