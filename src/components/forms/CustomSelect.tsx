@@ -65,19 +65,19 @@ export function CustomSelect({
 
   return (
     <Select value={value} onValueChange={handleSelectChange}>
-      <SelectTrigger>
+      <SelectTrigger className="bg-background/50 border-white/10 hover:bg-white/5 transition-colors">
         <SelectValue placeholder={placeholder} />
       </SelectTrigger>
-      <SelectContent>
+      <SelectContent className="glass-modal border-white/10">
         {options.map((option) => (
-          <SelectItem key={option} value={option}>
+          <SelectItem key={option} value={option} className="cursor-pointer focus:bg-white/5">
             {option}
           </SelectItem>
         ))}
         {allowCustom && (
           <>
             <SelectItem value="__separator__" disabled className="h-px bg-border p-0" />
-            <SelectItem value="__custom__">Custom…</SelectItem>
+            <SelectItem value="__custom__" className="cursor-pointer focus:bg-white/5 font-semibold text-primary">Custom…</SelectItem>
           </>
         )}
       </SelectContent>

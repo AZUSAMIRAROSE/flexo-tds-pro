@@ -20,10 +20,11 @@ export async function injectDataIntoExcelTemplate(
   // Parse XML and inject data
   const parser = new DOMParser()
   const xmlDoc = parser.parseFromString(sheetXml, 'text/xml')
+  const ns = xmlDoc.documentElement.namespaceURI
 
   // Helper to set cell value
   const setCellValue = (cellRef: string, value: string | number | null | undefined) => {
-    if (value === null || value === undefined) return
+    if (value === null || value === undefined || value === '') return
     
     // Find or create cell
     const rows = xmlDoc.getElementsByTagName('row')
@@ -58,28 +59,34 @@ export async function injectDataIntoExcelTemplate(
     }
     
     if (!cellElement) {
-      cellElement = xmlDoc.createElement('c')
+      cellElement = ns ? xmlDoc.createElementNS(ns, 'c') : xmlDoc.createElement('c')
       cellElement.setAttribute('r', cellRef)
       rowElement.appendChild(cellElement)
     }
     
-    // Set value
-    let valueElement = cellElement.getElementsByTagName('v')[0]
-    if (!valueElement) {
-      valueElement = xmlDoc.createElement('v')
-      cellElement.appendChild(valueElement)
-    }
-    
-    // For strings, we need to use shared strings (simplified: direct value)
+    // For strings, we need to use inline string
     if (typeof value === 'string') {
       cellElement.setAttribute('t', 'inlineStr')
-      const isElement = xmlDoc.createElement('is')
-      const tElement = xmlDoc.createElement('t')
+      const isElement = ns ? xmlDoc.createElementNS(ns, 'is') : xmlDoc.createElement('is')
+      const tElement = ns ? xmlDoc.createElementNS(ns, 't') : xmlDoc.createElement('t')
       tElement.textContent = value
       isElement.appendChild(tElement)
-      cellElement.innerHTML = ''
+      
+      while (cellElement.firstChild) {
+        cellElement.removeChild(cellElement.firstChild)
+      }
       cellElement.appendChild(isElement)
     } else {
+      // Clear inline string type if it was there
+      cellElement.removeAttribute('t')
+      let valueElement = cellElement.getElementsByTagName('v')[0]
+      if (!valueElement) {
+        valueElement = ns ? xmlDoc.createElementNS(ns, 'v') : xmlDoc.createElement('v')
+        while (cellElement.firstChild) {
+          cellElement.removeChild(cellElement.firstChild)
+        }
+        cellElement.appendChild(valueElement)
+      }
       valueElement.textContent = value.toString()
     }
   }

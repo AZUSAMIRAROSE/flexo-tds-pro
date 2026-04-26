@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;700&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -6,26 +6,35 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
-    --primary: 210 60% 30%;
-    --primary-foreground: 210 40% 98%;
-    --secondary: 24 71% 42%;
-    --secondary-foreground: 210 40% 98%;
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-    --accent: 45 93% 89%;
-    --accent-foreground: 36 75% 28%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 210 60% 30%;
-    --radius: 0.5rem;
+    --background: 240 10% 4%; /* #09090b */
+    --foreground: 240 5% 90%; /* #e5e1e4 */
+    
+    --card: 240 6% 10%; /* #18181b */
+    --card-foreground: 240 5% 90%;
+    
+    --popover: 240 5% 16%; /* #27272a */
+    --popover-foreground: 240 5% 90%;
+    
+    --primary: 235 86% 67%; /* #6366f1 Electric Indigo */
+    --primary-foreground: 0 0% 100%;
+    
+    --secondary: 172 66% 50%; /* #2dd4bf Precision Teal */
+    --secondary-foreground: 240 10% 4%;
+    
+    --muted: 240 6% 14%; 
+    --muted-foreground: 240 5% 65%; /* #a1a1aa */
+    
+    --accent: 240 6% 20%;
+    --accent-foreground: 240 5% 90%;
+    
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+    
+    --border: 240 6% 18%;
+    --input: 240 6% 18%;
+    --ring: 235 86% 67%;
+    
+    --radius: 0.25rem; /* 4px radius for the industrial look */
   }
 }
 
@@ -34,7 +43,7 @@
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground font-sans;
     font-feature-settings: "rlig" 1, "calt" 1;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
@@ -42,45 +51,66 @@
   
   /* Custom scrollbar */
   ::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
+    width: 6px;
+    height: 6px;
   }
   
   ::-webkit-scrollbar-track {
-    @apply bg-muted;
+    @apply bg-background;
   }
   
   ::-webkit-scrollbar-thumb {
-    @apply bg-muted-foreground/30 rounded-md;
+    @apply bg-muted-foreground/20 rounded-full;
   }
   
   ::-webkit-scrollbar-thumb:hover {
-    @apply bg-muted-foreground/50;
+    @apply bg-muted-foreground/40;
   }
 }
 
 @layer utilities {
+  .glass-panel {
+    @apply bg-[#18181b]/80 backdrop-blur-md border border-white/10 shadow-[0_8px_32px_0_rgba(0,0,0,0.3)];
+  }
+  
+  .glass-modal {
+    @apply bg-[#27272a]/90 backdrop-blur-lg border border-white/10 shadow-[0_20px_40px_-10px_rgba(0,0,0,0.5)];
+  }
+  
+  .data-mono {
+    font-family: 'Space Grotesk', monospace;
+    letter-spacing: 0.02em;
+  }
+  
+  .label-caps {
+    font-family: 'Space Grotesk', sans-serif;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-size: 0.6875rem; /* 11px */
+    font-weight: 700;
+  }
+
   .batch-code-highlight {
-    @apply bg-accent font-mono text-accent-foreground;
+    @apply bg-primary/10 border border-primary/20 text-primary font-mono;
   }
   
   .section-header {
-    @apply bg-primary text-primary-foreground px-4 py-3 rounded-lg font-semibold text-sm flex items-center gap-2;
+    @apply text-foreground border-b border-white/5 pb-2 font-semibold text-sm flex items-center gap-2;
   }
   
   .status-pill {
-    @apply inline-flex items-center rounded-full px-3 py-1 text-xs font-medium;
+    @apply inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium border;
   }
   
   .status-draft {
-    @apply bg-muted text-muted-foreground;
+    @apply bg-muted/50 text-muted-foreground border-white/10;
   }
   
   .status-completed {
-    @apply bg-green-100 text-green-800;
+    @apply bg-secondary/10 text-secondary border-secondary/20;
   }
   
   .status-approved {
-    @apply bg-blue-100 text-blue-800;
+    @apply bg-primary/10 text-primary border-primary/20;
   }
 }

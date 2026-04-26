@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react'
+import React, { useCallback, useState } from 'react'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
@@ -73,13 +73,13 @@ export function UnitSequenceTable() {
   }, [units, updateUnit])
 
   return (
-    <div className="space-y-4">
-      <div className="section-header">
-        <span className="text-lg">▶</span>
-        <span>PRINTING UNIT SEQUENCE</span>
+    <div className="glass-panel border-white/5 space-y-6 p-6 md:p-8">
+      <div className="flex items-center gap-3 border-b border-white/5 pb-4 mb-6">
+        <div className="w-8 h-8 rounded bg-primary/10 flex items-center justify-center text-primary font-bold shadow-[0_0_10px_rgba(99,102,241,0.2)]">3</div>
+        <h3 className="text-lg font-bold tracking-widest text-foreground uppercase">PRINTING UNIT SEQUENCE</h3>
       </div>
 
-      <div className="border rounded-lg overflow-hidden">
+      <div className="border border-white/10 rounded-lg overflow-hidden bg-background/50">
         <div className="overflow-x-auto">
           <Table>
             <TableHeader>
@@ -105,8 +105,8 @@ export function UnitSequenceTable() {
                 </TableRow>
               ) : (
                 units.map((unit, index) => (
-                  <>
-                    <TableRow key={unit.id || index} className="hover:bg-muted/30">
+                  <React.Fragment key={unit.id || index}>
+                    <TableRow className="hover:bg-muted/30">
                       <TableCell className="font-semibold text-center">
                         {unit.unit_no}
                       </TableCell>
@@ -229,7 +229,7 @@ export function UnitSequenceTable() {
                         </div>
                       </TableCell>
                     </TableRow>
-                  </>
+                    </React.Fragment>
                 ))
               )}
             </TableBody>

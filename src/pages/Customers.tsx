@@ -123,85 +123,103 @@ export default function Customers() {
 
   return (
     <Layout>
-      <div className="space-y-6">
+      <div className="space-y-6 fade-in">
         {/* Header */}
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 glass-panel p-4 md:p-6 mb-6">
           <div>
-            <h1 className="text-3xl font-bold text-primary">Customers</h1>
-            <p className="text-muted-foreground mt-1">
-              Manage customer information and machine assignments
+            <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-foreground flex items-center gap-3">
+              CLIENT DATABASE
+            </h1>
+            <p className="text-sm text-muted-foreground mt-1 font-mono">
+              Manage customer profiles and system assignments
             </p>
           </div>
-          <Button size="lg" onClick={() => openDialog()}>
+          <Button size="lg" onClick={() => openDialog()} className="shadow-[0_0_15px_rgba(99,102,241,0.3)]">
             <Plus className="mr-2 h-5 w-5" />
-            Add Customer
+            ADD CLIENT
           </Button>
         </div>
 
         {/* Table */}
-        <Card>
+        <Card className="glass-panel border-white/5 overflow-hidden">
           <CardContent className="p-0">
             {isLoading ? (
-              <div className="flex items-center justify-center py-12">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              <div className="flex flex-col items-center justify-center py-16">
+                <Loader2 className="h-8 w-8 animate-spin text-primary mb-4" />
+                <p className="label-caps text-muted-foreground">Accessing Database...</p>
               </div>
             ) : !customers || customers.length === 0 ? (
-              <div className="text-center py-12">
-                <Building2 className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                <p className="text-muted-foreground mb-4">No customers yet</p>
-                <Button onClick={() => openDialog()}>
+              <div className="text-center py-16">
+                <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary/10 text-primary mb-4">
+                  <Building2 className="h-8 w-8" />
+                </div>
+                <h3 className="text-lg font-medium mb-2">No Clients Found</h3>
+                <p className="text-muted-foreground mb-6">The database is currently empty. Add your first client to begin.</p>
+                <Button onClick={() => openDialog()} className="shadow-[0_0_15px_rgba(99,102,241,0.3)]">
                   <Plus className="mr-2 h-4 w-4" />
-                  Add First Customer
+                  Add First Client
                 </Button>
               </div>
             ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Location</TableHead>
-                    <TableHead>Machines</TableHead>
-                    <TableHead>TDS Records</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {customers.map((customer) => {
-                    const stats = getCustomerStats(customer.id)
-                    return (
-                      <TableRow key={customer.id}>
-                        <TableCell className="font-medium">
-                          {customer.name}
-                        </TableCell>
-                        <TableCell>{customer.location || '—'}</TableCell>
-                        <TableCell>{stats.machines}</TableCell>
-                        <TableCell>{stats.tdsCount}</TableCell>
-                        <TableCell className="text-right">
-                          <div className="flex items-center justify-end gap-2">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => openDialog(customer)}
-                            >
-                              <Edit className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => {
-                                setDeletingCustomer(customer)
-                                setDeleteDialogOpen(true)
-                              }}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    )
-                  })}
-                </TableBody>
-              </Table>
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader className="bg-white/[0.02]">
+                    <TableRow className="border-white/5 hover:bg-transparent">
+                      <TableHead className="label-caps">Name</TableHead>
+                      <TableHead className="label-caps">Location</TableHead>
+                      <TableHead className="label-caps">Machines</TableHead>
+                      <TableHead className="label-caps">TDS Records</TableHead>
+                      <TableHead className="text-right label-caps">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {customers.map((customer) => {
+                      const stats = getCustomerStats(customer.id)
+                      return (
+                        <TableRow key={customer.id} className="border-white/5 hover:bg-white/[0.02] transition-colors">
+                          <TableCell className="font-medium text-foreground">
+                            {customer.name}
+                          </TableCell>
+                          <TableCell className="text-muted-foreground">{customer.location || '—'}</TableCell>
+                          <TableCell>
+                            <span className="font-mono text-sm px-2 py-1 bg-white/5 rounded border border-white/10 text-foreground">
+                              {stats.machines}
+                            </span>
+                          </TableCell>
+                          <TableCell>
+                            <span className="font-mono text-sm px-2 py-1 bg-white/5 rounded border border-white/10 text-foreground">
+                              {stats.tdsCount}
+                            </span>
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <div className="flex items-center justify-end gap-2">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="bg-transparent border-white/10 hover:bg-white/5"
+                                onClick={() => openDialog(customer)}
+                              >
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="bg-transparent border-white/10 hover:bg-destructive/20 hover:text-destructive hover:border-destructive/30"
+                                onClick={() => {
+                                  setDeletingCustomer(customer)
+                                  setDeleteDialogOpen(true)
+                                }}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      )
+                    })}
+                  </TableBody>
+                </Table>
+              </div>
             )}
           </CardContent>
         </Card>

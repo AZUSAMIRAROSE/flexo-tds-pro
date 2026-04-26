@@ -23,9 +23,12 @@ export function useAutoSave(tdsId: string | undefined, enabled: boolean = true) 
     const autoSave = async () => {
       isSavingRef.current = true
       try {
+        // Strip nested relations to prevent schema errors
+        const { customer, machine, units: _units, ...cleanFormData } = debouncedFormData as any
+
         await updateMutation.mutateAsync({
           id: tdsId,
-          updates: debouncedFormData as any,
+          updates: cleanFormData,
           unitUpdates: debouncedUnits as any,
         })
         

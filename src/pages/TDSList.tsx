@@ -121,18 +121,18 @@ export default function TDSList() {
         </div>
 
         {/* Filters */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center text-lg">
-              <Filter className="mr-2 h-5 w-5" />
-              Filters
+        <Card className="glass-panel border-white/5">
+          <CardHeader className="border-b border-white/5 bg-white/[0.02]">
+            <CardTitle className="flex items-center text-lg font-semibold tracking-wide">
+              <Filter className="mr-2 h-5 w-5 text-primary" />
+              SYSTEM FILTERS
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="grid gap-4 md:grid-cols-4">
+          <CardContent className="pt-6">
+            <div className="grid gap-6 md:grid-cols-4">
               {/* Search */}
               <div className="space-y-2">
-                <Label htmlFor="search">Search</Label>
+                <Label htmlFor="search" className="label-caps text-muted-foreground">Search</Label>
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input
@@ -140,19 +140,19 @@ export default function TDSList() {
                     placeholder="Order, Customer, Machine..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-9"
+                    className="pl-9 bg-background/50 border-white/10 focus-visible:ring-primary/50"
                   />
                 </div>
               </div>
 
               {/* Customer Filter */}
               <div className="space-y-2">
-                <Label>Customer</Label>
+                <Label className="label-caps text-muted-foreground">Customer</Label>
                 <Select value={selectedCustomer} onValueChange={setSelectedCustomer}>
-                  <SelectTrigger>
+                  <SelectTrigger className="bg-background/50 border-white/10 focus:ring-primary/50">
                     <SelectValue placeholder="All Customers" />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="glass-modal border-white/10">
                     <SelectItem value="all">All Customers</SelectItem>
                     {customers?.map((customer) => (
                       <SelectItem key={customer.id} value={customer.id}>
@@ -165,12 +165,12 @@ export default function TDSList() {
 
               {/* Machine Filter */}
               <div className="space-y-2">
-                <Label>Machine</Label>
+                <Label className="label-caps text-muted-foreground">Machine</Label>
                 <Select value={selectedMachine} onValueChange={setSelectedMachine}>
-                  <SelectTrigger>
+                  <SelectTrigger className="bg-background/50 border-white/10 focus:ring-primary/50">
                     <SelectValue placeholder="All Machines" />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="glass-modal border-white/10">
                     <SelectItem value="all">All Machines</SelectItem>
                     {machines?.map((machine) => (
                       <SelectItem key={machine.id} value={machine.id}>
@@ -183,12 +183,12 @@ export default function TDSList() {
 
               {/* Status Filter */}
               <div className="space-y-2">
-                <Label>Status</Label>
+                <Label className="label-caps text-muted-foreground">Status</Label>
                 <Select value={selectedStatus} onValueChange={setSelectedStatus}>
-                  <SelectTrigger>
+                  <SelectTrigger className="bg-background/50 border-white/10 focus:ring-primary/50">
                     <SelectValue placeholder="All Statuses" />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="glass-modal border-white/10">
                     <SelectItem value="all">All Statuses</SelectItem>
                     <SelectItem value="Draft">Draft</SelectItem>
                     <SelectItem value="Completed">Completed</SelectItem>
@@ -200,11 +200,12 @@ export default function TDSList() {
 
             {/* Active Filters Summary */}
             {(searchQuery || selectedCustomer !== 'all' || selectedMachine !== 'all' || selectedStatus !== 'all') && (
-              <div className="mt-4 flex items-center gap-2 text-sm text-muted-foreground">
-                <span>Showing {filteredRecords.length} of {allRecords?.length || 0} records</span>
+              <div className="mt-6 flex items-center gap-3 text-sm text-muted-foreground border-t border-white/5 pt-4">
+                <span className="font-medium">Showing {filteredRecords.length} of {allRecords?.length || 0} records</span>
                 <Button
                   variant="ghost"
                   size="sm"
+                  className="hover:bg-white/5 hover:text-foreground"
                   onClick={() => {
                     setSearchQuery('')
                     setSelectedCustomer('all')
@@ -220,70 +221,78 @@ export default function TDSList() {
         </Card>
 
         {/* Table */}
-        <Card>
+        <Card className="glass-panel border-white/5 overflow-hidden">
           <CardContent className="p-0">
             {isLoading ? (
-              <div className="flex items-center justify-center py-12">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              <div className="flex flex-col items-center justify-center py-16">
+                <Loader2 className="h-8 w-8 animate-spin text-primary mb-4" />
+                <p className="label-caps text-muted-foreground">Accessing Records...</p>
               </div>
             ) : paginatedRecords.length === 0 ? (
-              <div className="text-center py-12">
-                <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                <p className="text-muted-foreground">
+              <div className="text-center py-16">
+                <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary/10 text-primary mb-4">
+                  <FileText className="h-8 w-8" />
+                </div>
+                <h3 className="text-lg font-medium mb-2">No Records Found</h3>
+                <p className="text-muted-foreground mb-6">
                   {searchQuery || selectedCustomer !== 'all' || selectedMachine !== 'all' || selectedStatus !== 'all'
                     ? 'No records match your filters'
-                    : 'No TDS records yet'}
+                    : 'The database is currently empty.'}
                 </p>
               </div>
             ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Order Number</TableHead>
-                    <TableHead>Customer</TableHead>
-                    <TableHead>Machine</TableHead>
-                    <TableHead>Date</TableHead>
-                    <TableHead>Units</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {paginatedRecords.map((record) => (
-                    <TableRow key={record.id}>
-                      <TableCell className="font-medium">
-                        {record.order_number}
-                      </TableCell>
-                      <TableCell>
-                        <div>
-                          <div className="font-medium">{record.customer?.name}</div>
-                          {record.customer?.location && (
-                            <div className="text-xs text-muted-foreground">
-                              {record.customer.location}
-                            </div>
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell>{record.machine?.machine_code}</TableCell>
-                      <TableCell>{formatDate(record.date)}</TableCell>
-                      <TableCell>{record.num_units}</TableCell>
-                      <TableCell>
-                        <StatusBadge status={record.status as any} />
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <RowActions
-                          record={record}
-                          canDelete={canDelete(record)}
-                          onDelete={(recordId) => {
-                            setRecordToDelete(recordId)
-                            setDeleteDialogOpen(true)
-                          }}
-                        />
-                      </TableCell>
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader className="bg-white/[0.02]">
+                    <TableRow className="border-white/5 hover:bg-transparent">
+                      <TableHead className="label-caps">Order Number</TableHead>
+                      <TableHead className="label-caps">Customer</TableHead>
+                      <TableHead className="label-caps">Machine</TableHead>
+                      <TableHead className="label-caps">Date</TableHead>
+                      <TableHead className="label-caps">Units</TableHead>
+                      <TableHead className="label-caps">Status</TableHead>
+                      <TableHead className="text-right label-caps">Actions</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {paginatedRecords.map((record) => (
+                      <TableRow key={record.id} className="border-white/5 hover:bg-white/[0.02] transition-colors">
+                        <TableCell>
+                          <span className="font-mono text-sm px-2 py-1 bg-white/5 rounded border border-white/10 text-foreground">
+                            {record.order_number}
+                          </span>
+                        </TableCell>
+                        <TableCell>
+                          <div>
+                            <div className="font-medium">{record.customer?.name}</div>
+                            {record.customer?.location && (
+                              <div className="text-xs text-muted-foreground mt-0.5">
+                                {record.customer.location}
+                              </div>
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell className="font-medium text-muted-foreground">{record.machine?.machine_code}</TableCell>
+                        <TableCell className="data-mono">{formatDate(record.date)}</TableCell>
+                        <TableCell className="data-mono">{record.num_units}</TableCell>
+                        <TableCell>
+                          <StatusBadge status={record.status as any} />
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <RowActions
+                            record={record}
+                            canDelete={canDelete(record)}
+                            onDelete={(recordId) => {
+                              setRecordToDelete(recordId)
+                              setDeleteDialogOpen(true)
+                            }}
+                          />
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
             )}
           </CardContent>
         </Card>

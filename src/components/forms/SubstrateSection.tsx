@@ -9,13 +9,13 @@ export function SubstrateSection() {
   const { formData, updateField } = useTDSFormStore()
 
   return (
-    <div className="space-y-4">
-      <div className="section-header">
-        <span className="text-lg">▶</span>
-        <span>SUBSTRATE · CORONA · FOIL DETAILS</span>
+    <div className="glass-panel border-white/5 space-y-6 p-6 md:p-8">
+      <div className="flex items-center gap-3 border-b border-white/5 pb-4 mb-6">
+        <div className="w-8 h-8 rounded bg-primary/10 flex items-center justify-center text-primary font-bold shadow-[0_0_10px_rgba(99,102,241,0.2)]">2</div>
+        <h3 className="text-lg font-bold tracking-widest text-foreground uppercase">SUBSTRATE · CORONA · FOIL DETAILS</h3>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="space-y-2">
           <Label htmlFor="substrate_laminate">Substrate / Laminate</Label>
           <CustomSelect
