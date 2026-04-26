@@ -15,7 +15,7 @@ export function JobInfoSection() {
         <h3 className="text-lg font-bold tracking-widest text-foreground uppercase">JOB INFORMATION</h3>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
         <div className="space-y-2">
           <Label htmlFor="date">
             Date <span className="text-destructive">*</span>
@@ -92,7 +92,7 @@ export function JobInfoSection() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="space-y-2">
           <Label htmlFor="operator_name">Operator Name</Label>
           <Input

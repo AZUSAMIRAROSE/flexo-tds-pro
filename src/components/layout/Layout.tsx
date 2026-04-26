@@ -15,7 +15,7 @@ export default function Layout({ children }: LayoutProps) {
       
       <div className="flex-1 flex flex-col min-w-0">
         <Header />
-        <main className="flex-1 container mx-auto py-8 px-4 md:px-8 max-w-7xl animate-in fade-in duration-500 overflow-x-hidden">
+        <main className="flex-1 container mx-auto py-8 px-4 md:px-8 max-w-[1600px] animate-in fade-in duration-500 overflow-x-hidden">
           {children}
         </main>
       </div>

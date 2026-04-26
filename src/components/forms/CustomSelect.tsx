@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { ChevronDown } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import {
   Select,
@@ -7,6 +8,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip'
 
 interface CustomSelectProps {
   value: string
@@ -39,27 +46,37 @@ export function CustomSelect({
 
   if (isCustom) {
     return (
-      <div className="relative">
-        <Input
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          placeholder="Enter custom value..."
-          onBlur={() => {
-            if (!value) setIsCustom(false)
-          }}
-          autoFocus
-        />
-        <button
-          type="button"
-          onClick={() => {
-            setIsCustom(false)
-            onChange('')
-          }}
-          className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground hover:text-foreground"
-        >
-          Back to dropdown
-        </button>
-      </div>
+      <TooltipProvider>
+        <div className="relative group">
+          <Input
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+            placeholder="Enter custom value..."
+            className="pr-9 h-10 bg-background/50 border-white/10"
+            onBlur={() => {
+              if (!value) setIsCustom(false)
+            }}
+            autoFocus
+          />
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsCustom(false)
+                  onChange('')
+                }}
+                className="absolute right-0 top-0 h-10 w-9 flex items-center justify-center text-muted-foreground hover:text-primary transition-colors border-l border-white/5 bg-white/[0.02] rounded-r-md group-hover:bg-white/[0.05]"
+              >
+                <ChevronDown className="h-4 w-4" />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent side="top" className="glass-modal border-white/10 text-[10px] font-mono uppercase tracking-widest">
+              Switch to Dropdown
+            </TooltipContent>
+          </Tooltip>
+        </div>
+      </TooltipProvider>
     )
   }
 

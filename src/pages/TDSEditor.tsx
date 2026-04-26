@@ -203,21 +203,21 @@ export default function TDSEditor() {
       <div className="space-y-6 fade-in">
         {/* Header */}
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 glass-panel p-4 md:p-6 mb-6">
-          <div className="flex flex-col md:flex-row items-start md:items-center gap-4">
+          <div className="flex flex-col md:flex-row items-start md:items-center gap-4 flex-1">
             <Link to="/tds">
-              <Button variant="ghost" size="sm" className="hover:bg-white/5">
+              <Button variant="ghost" size="sm" className="hover:bg-white/5 shrink-0">
                 <ArrowLeft className="mr-2 h-4 w-4" />
                 Back to Log
               </Button>
             </Link>
-            <div className="flex items-center gap-3">
-              <div className="w-1 h-8 bg-primary rounded-full"></div>
-              <div>
-                <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-foreground flex items-center gap-3">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="w-1 h-8 bg-primary rounded-full shrink-0"></div>
+              <div className="min-w-0">
+                <h1 className="text-xl md:text-2xl lg:text-3xl font-bold tracking-tight text-foreground flex items-center gap-3 truncate">
                   {isNew ? 'INITIATE NEW SEQUENCE' : `SEQUENCE: ${formData.order_number}`}
                 </h1>
                 {!isNew && (
-                  <p className="text-sm text-muted-foreground mt-1 font-mono">
+                  <p className="text-xs md:text-sm text-muted-foreground mt-1 font-mono truncate">
                     LOGGED {formatDateTime(formData.created_at)}
                     {formData.prepared_by && user && ` // OP: ${user.fullName}`}
                   </p>
@@ -226,7 +226,7 @@ export default function TDSEditor() {
             </div>
           </div>
 
-          <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
+          <div className="flex flex-wrap items-center gap-2 md:gap-3 w-full md:w-auto justify-start md:justify-end">
             {!isNew && (
               <>
                 <StatusBadge status={formData.status as any} />
@@ -341,7 +341,7 @@ export default function TDSEditor() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-5 text-left">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 text-left">
                   <div className="space-y-1.5">
                     <Label className="label-caps text-muted-foreground text-[10px]">Client Identifier</Label>
                     <Select
@@ -352,7 +352,7 @@ export default function TDSEditor() {
                       }}
                       disabled={!canEdit()}
                     >
-                      <SelectTrigger className="bg-background/50 border-white/10 h-10">
+                      <SelectTrigger className="bg-background/50 border-white/10 h-10 w-full">
                         <SelectValue placeholder="Select Target Client" />
                       </SelectTrigger>
                       <SelectContent className="glass-modal border-white/10">
@@ -372,15 +372,17 @@ export default function TDSEditor() {
                       onValueChange={handleMachineChange}
                       disabled={!selectedCustomerId || !canEdit()}
                     >
-                      <SelectTrigger className="bg-background/50 border-white/10 h-10">
+                      <SelectTrigger className="bg-background/50 border-white/10 h-10 w-full">
                         <SelectValue placeholder="Assign Hardware" />
                       </SelectTrigger>
                       <SelectContent className="glass-modal border-white/10">
                         {machines.map((machine) => (
-                          <SelectItem key={machine.id} value={machine.id}>
-                            <div className="flex items-center justify-between w-full">
-                              <span>{machine.machine_code}</span>
-                              <span className="text-xs text-muted-foreground font-mono">{machine.default_unit_count} UNITS</span>
+                          <SelectItem key={machine.id} value={machine.id} className="cursor-pointer">
+                            <div className="flex items-center justify-between w-full gap-4">
+                              <span className="font-medium">{machine.machine_code}</span>
+                              <span className="text-[10px] text-muted-foreground font-mono bg-white/5 px-1.5 py-0.5 rounded shrink-0">
+                                {machine.default_unit_count} UNITS
+                              </span>
                             </div>
                           </SelectItem>
                         ))}
@@ -388,10 +390,10 @@ export default function TDSEditor() {
                     </Select>
                   </div>
 
-                  <div className="space-y-1.5">
+                  <div className="space-y-1.5 min-w-0 sm:col-span-2 lg:col-span-1">
                     <Label className="label-caps text-muted-foreground text-[10px]">System Designation</Label>
-                    <div className="h-10 px-3 py-2 border border-white/5 rounded-md bg-white/[0.02] flex items-center text-sm font-mono text-muted-foreground/80">
-                      {machines.find(m => m.id === formData.machine_id)?.machine_name || 'SIEGWERK INDIA PVT. LTD.'}
+                    <div className="h-10 px-3 py-2 border border-white/5 rounded-md bg-white/[0.02] flex items-center text-sm font-mono text-muted-foreground/80 overflow-hidden">
+                      <span className="truncate">{machines.find(m => m.id === formData.machine_id)?.machine_name || 'SIEGWERK INDIA PVT. LTD.'}</span>
                     </div>
                   </div>
                 </div>

@@ -15,7 +15,7 @@ export function SubstrateSection() {
         <h3 className="text-lg font-bold tracking-widest text-foreground uppercase">SUBSTRATE · CORONA · FOIL DETAILS</h3>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
         <div className="space-y-2">
           <Label htmlFor="substrate_laminate">Substrate / Laminate</Label>
           <CustomSelect
@@ -52,7 +52,7 @@ export function SubstrateSection() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="space-y-2">
           <div className="flex items-center space-x-2">
             <Checkbox
@@ -107,7 +107,7 @@ export function SubstrateSection() {
         )}
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         <div className="space-y-2">
           <Label htmlFor="foil_supplier">Foil Supplier</Label>
           <Input
