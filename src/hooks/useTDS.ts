@@ -73,6 +73,12 @@ export function useTDSRecord(id: string | undefined) {
         .single()
 
       if (error) throw error
+      
+      // Sort units by unit_no
+      if (data && data.units) {
+        data.units.sort((a: any, b: any) => a.unit_no - b.unit_no)
+      }
+      
       return data as TDSRecordWithRelations
     },
     enabled: !!id,
@@ -150,6 +156,7 @@ export function useUpdateTDS() {
       id: string
       updates: TDSRecordUpdate
       unitUpdates?: TDSUnitUpdate[]
+      isAutoSave?: boolean
     }) => {
       // Auto-compute overall result if quality tests changed
       if (updates.tape_test || updates.flow_marks || updates.flex_test || 
@@ -186,15 +193,51 @@ export function useUpdateTDS() {
 
       if (error) throw error
 
-      // Update units if provided
-      if (unitUpdates && unitUpdates.length > 0) {
-        for (const unit of unitUpdates) {
-          const { error: unitError } = await supabase
-            .from('tds_units')
-            .update(unit)
-            .eq('id', unit.id!)
+      // Handle unit updates: delete old ones, update existing, insert new
+      if (unitUpdates !== undefined) {
+        // Get current units from database
+        const { data: currentUnits, error: fetchError } = await supabase
+          .from('tds_units')
+          .select('id')
+          .eq('tds_record_id', id)
 
-          if (unitError) throw unitError
+        if (fetchError) throw fetchError
+
+        const currentUnitIds = new Set(currentUnits?.map(u => u.id) || [])
+        const newUnitIds = new Set(unitUpdates.filter(u => u.id).map(u => u.id!))
+
+        // Delete units that are no longer in the array
+        const unitsToDelete = Array.from(currentUnitIds).filter(id => !newUnitIds.has(id))
+        if (unitsToDelete.length > 0) {
+          const { error: deleteError } = await supabase
+            .from('tds_units')
+            .delete()
+            .in('id', unitsToDelete)
+
+          if (deleteError) throw deleteError
+        }
+
+        // Update or insert units
+        for (const unit of unitUpdates) {
+          if (unit.id && newUnitIds.has(unit.id)) {
+            // Update existing unit
+            const { error: unitError } = await supabase
+              .from('tds_units')
+              .update(unit)
+              .eq('id', unit.id)
+
+            if (unitError) throw unitError
+          } else if (!unit.id) {
+            // Insert new unit
+            const { error: insertError } = await supabase
+              .from('tds_units')
+              .insert({
+                ...unit,
+                tds_record_id: id,
+              })
+
+            if (insertError) throw insertError
+          }
         }
       }
 
@@ -204,15 +247,40 @@ export function useUpdateTDS() {
         action: 'updated',
       })
 
-      return data as TDSRecord
+      // Fetch the full updated record to return and update cache
+      const { data: updatedRecord, error: reloadError } = await supabase
+        .from('tds_records')
+        .select(`
+          *,
+          customer:customers(*),
+          machine:machines(*),
+          units:tds_units(*)
+        `)
+        .eq('id', id)
+        .single()
+
+      if (reloadError) throw reloadError
+
+      // Sort units by unit_no
+      if (updatedRecord && (updatedRecord as any).units) {
+        (updatedRecord as any).units.sort((a: any, b: any) => a.unit_no - b.unit_no)
+      }
+
+      return updatedRecord as TDSRecordWithRelations
     },
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['tds-records', variables.id] })
+    onSuccess: (data, variables) => {
+      // Update query cache with new data
+      queryClient.setQueryData(['tds-records', variables.id], data)
+      
+      // Invalidate related queries
       queryClient.invalidateQueries({ queryKey: ['tds-records'] })
-      toast({
-        title: 'TDS updated',
-        description: 'TDS record has been successfully updated.',
-      })
+      
+      if (!variables.isAutoSave) {
+        toast({
+          title: 'TDS updated',
+          description: 'TDS record has been successfully updated.',
+        })
+      }
     },
     onError: (error: Error) => {
       toast({

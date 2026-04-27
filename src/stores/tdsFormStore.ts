@@ -23,13 +23,64 @@ export const useTDSFormStore = create<TDSFormState>((set) => ({
   isDirty: false,
 
   setFormData: (data) =>
-    set({ formData: data, isDirty: true }),
+    set((state) => {
+      const newState: any = { formData: data, isDirty: true }
+      
+      if (data.num_units !== undefined && data.num_units !== state.units.length) {
+        const newCount = data.num_units
+        const currentUnits = state.units
+        
+        if (newCount > currentUnits.length) {
+          const unitsToAdd = newCount - currentUnits.length
+          const newUnits = [...currentUnits]
+          for (let i = 0; i < unitsToAdd; i++) {
+            newUnits.push({
+              unit_no: currentUnits.length + i + 1,
+              anilox_unit: 'LPI',
+              volume_unit: 'CCM',
+            } as TDSUnit)
+          }
+          newState.units = newUnits
+        } else {
+          newState.units = currentUnits.slice(0, newCount)
+        }
+      }
+      
+      return newState
+    }),
 
   updateField: (field, value) =>
-    set((state) => ({
-      formData: { ...state.formData, [field]: value },
-      isDirty: true,
-    })),
+    set((state) => {
+      const newState = {
+        formData: { ...state.formData, [field]: value },
+        isDirty: true,
+      } as Partial<TDSFormState>
+
+      // If num_units changed, synchronize units array
+      if (field === 'num_units' && typeof value === 'number') {
+        const newCount = value
+        const currentUnits = state.units
+        
+        if (newCount > currentUnits.length) {
+          // Add units
+          const unitsToAdd = newCount - currentUnits.length
+          const newUnits = [...currentUnits]
+          for (let i = 0; i < unitsToAdd; i++) {
+            newUnits.push({
+              unit_no: currentUnits.length + i + 1,
+              anilox_unit: 'LPI',
+              volume_unit: 'CCM',
+            } as TDSUnit)
+          }
+          newState.units = newUnits
+        } else if (newCount < currentUnits.length) {
+          // Remove units
+          newState.units = currentUnits.slice(0, newCount)
+        }
+      }
+
+      return newState
+    }),
 
   setUnits: (units) =>
     set({ units, isDirty: true }),
@@ -51,21 +102,28 @@ export const useTDSFormStore = create<TDSFormState>((set) => ({
         anilox_unit: 'LPI',
         volume_unit: 'CCM',
       }
-      return { units: [...state.units, newUnit as TDSUnit], isDirty: true }
+      const newUnits = [...state.units, newUnit as TDSUnit]
+      return { 
+        units: newUnits, 
+        formData: { ...state.formData, num_units: newUnits.length },
+        isDirty: true 
+      }
     }),
 
   removeUnit: (index) =>
     set((state) => {
       const newUnits = state.units.filter((_, i) => i !== index)
       // Re-number units
+      const renumberedUnits = newUnits.map((unit, i) => ({ ...unit, unit_no: i + 1 }))
       return {
-        units: newUnits.map((unit, i) => ({ ...unit, unit_no: i + 1 })),
+        units: renumberedUnits,
+        formData: { ...state.formData, num_units: renumberedUnits.length },
         isDirty: true,
       }
     }),
 
   resetForm: () =>
-    set({ formData: {}, units: [], isDirty: false }),
+    set({ formData: { status: 'Draft' }, units: [], isDirty: false }),
 
   markClean: () =>
     set({ isDirty: false }),

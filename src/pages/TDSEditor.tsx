@@ -60,12 +60,13 @@ export default function TDSEditor() {
   // Filter machines by selected customer
   const machines = allMachines?.filter(m => m.customer_id === selectedCustomerId) || []
 
-  // Load existing TDS data
+  // Load existing TDS data - but don't override if there are unsaved changes
   useEffect(() => {
-    if (tdsRecord) {
+    if (tdsRecord && !isDirty) {
+      // Only reinitialize if not dirty (no unsaved changes)
       initData(tdsRecord, tdsRecord.units || [])
       setSelectedCustomerId(tdsRecord.customer_id || '')
-    } else if (isNew) {
+    } else if (isNew && !isDirty) {
       resetForm()
       // Initialize with default units based on machine selection
       const defaultUnits = Array.from({ length: formData.num_units || 10 }, (_, i) => ({
@@ -79,26 +80,9 @@ export default function TDSEditor() {
     return () => {
       if (isNew) resetForm()
     }
-  }, [tdsRecord, isNew])
+  }, [tdsRecord, isNew, isDirty])
 
-  // Auto-generate units when num_units changes
-  useEffect(() => {
-    if (formData.num_units && formData.num_units !== units.length) {
-      const count = formData.num_units
-      if (count > units.length) {
-        // Add units
-        const newUnits = Array.from({ length: count - units.length }, (_, i) => ({
-          unit_no: units.length + i + 1,
-          anilox_unit: 'LPI',
-          volume_unit: 'CCM',
-        }))
-        setUnits([...units, ...newUnits] as any)
-      } else {
-        // Remove units
-        setUnits(units.slice(0, count))
-      }
-    }
-  }, [formData.num_units])
+
 
   // Machine selection auto-fill
   const handleMachineChange = (machineId: string) => {
@@ -231,22 +215,37 @@ export default function TDSEditor() {
               <>
                 <StatusBadge status={formData.status as any} />
                 {canEdit() && (
-                  <div className="flex items-center gap-2 text-xs font-mono px-3 py-1.5 rounded bg-white/5 border border-white/10">
-                    {autoSaving ? (
-                      <>
-                        <Cloud className="h-3 w-3 animate-pulse text-secondary" />
-                        <span className="text-secondary">SYNCING...</span>
-                      </>
-                    ) : isDirty ? (
-                      <>
-                        <Cloud className="h-3 w-3 text-warning" />
-                        <span className="text-warning">UNSAVED</span>
-                      </>
-                    ) : (
-                      <>
-                        <CheckCircle2 className="h-3 w-3 text-success" />
-                        <span className="text-success">SYNCED</span>
-                      </>
+                  <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-2 text-xs font-mono px-3 py-1.5 rounded bg-white/5 border border-white/10">
+                      {autoSaving ? (
+                        <>
+                          <Cloud className="h-3 w-3 animate-pulse text-secondary" />
+                          <span className="text-secondary">AUTO-SYNCING...</span>
+                        </>
+                      ) : isDirty ? (
+                        <>
+                          <Cloud className="h-3 w-3 text-warning" />
+                          <span className="text-warning">PENDING CHANGES</span>
+                        </>
+                      ) : (
+                        <>
+                          <CheckCircle2 className="h-3 w-3 text-success" />
+                          <span className="text-success">ALL CHANGES SYNCED</span>
+                        </>
+                      )}
+                    </div>
+                    
+                    {isDirty && (
+                      <Button 
+                        size="sm" 
+                        variant="outline" 
+                        onClick={() => handleSave()} 
+                        disabled={saving}
+                        className="bg-primary/10 border-primary/30 text-primary hover:bg-primary/20 animate-pulse"
+                      >
+                        <Cloud className="mr-2 h-3 w-3" />
+                        SYNC NOW
+                      </Button>
                     )}
                   </div>
                 )}
