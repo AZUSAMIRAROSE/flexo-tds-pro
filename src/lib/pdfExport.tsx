@@ -179,7 +179,7 @@ const TDSPDFDocument: React.FC<TDSPDFDocumentProps> = ({ data }) => (
       </View>
 
       {/* Job Information */}
-      <Text style={styles.sectionHeader}>▶ JOB INFORMATION</Text>
+      <Text style={styles.sectionHeader}>JOB INFORMATION</Text>
       <View style={styles.grid}>
         <View style={styles.gridItem}>
           <Text style={styles.label}>Date</Text>
@@ -224,7 +224,7 @@ const TDSPDFDocument: React.FC<TDSPDFDocumentProps> = ({ data }) => (
       </View>
 
       {/* Substrate Section */}
-      <Text style={styles.sectionHeader}>▶ SUBSTRATE · CORONA · FOIL DETAILS</Text>
+      <Text style={styles.sectionHeader}>SUBSTRATE · CORONA · FOIL DETAILS</Text>
       <View style={styles.grid}>
         <View style={styles.gridItem33}>
           <Text style={styles.label}>Substrate / Laminate</Text>
@@ -257,7 +257,7 @@ const TDSPDFDocument: React.FC<TDSPDFDocumentProps> = ({ data }) => (
       </View>
 
       {/* Unit Sequence Table */}
-      <Text style={styles.sectionHeader}>▶ PRINTING UNIT SEQUENCE</Text>
+      <Text style={styles.sectionHeader}>PRINTING UNIT SEQUENCE</Text>
       <View style={styles.table}>
         <View style={styles.tableHeader}>
           <Text style={{ ...styles.tableCell, width: '8%' }}>Unit</Text>
@@ -292,7 +292,7 @@ const TDSPDFDocument: React.FC<TDSPDFDocumentProps> = ({ data }) => (
       </View>
 
       {/* Quality Parameters */}
-      <Text style={styles.sectionHeader}>▶ QUALITY PARAMETERS</Text>
+      <Text style={styles.sectionHeader}>QUALITY PARAMETERS</Text>
       <View style={styles.qualityGrid}>
         <View style={styles.qualityItem}>
           <Text style={styles.label}>Tape Test</Text>

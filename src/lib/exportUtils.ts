@@ -1,7 +1,7 @@
 import JSZip from 'jszip'
 import { saveAs } from 'file-saver'
 import type { TDSRecordWithRelations } from '@/types/tds.types'
-import { formatDate } from './utils'
+import { computeOverallResult, formatDate } from './utils'
 
 type CellValue = string | number | null | undefined
 type UnitRow = NonNullable<TDSRecordWithRelations['units']>[number]
@@ -16,6 +16,19 @@ const QUALITY_VALUES_TEMPLATE_ROW = 32
 const QUALITY_NOTES_TEMPLATE_ROW = 34
 const PREPARED_BY_TEMPLATE_ROW = 36
 const PREPARED_AT_TEMPLATE_ROW = 37
+const DATA_FONT_NAME = 'Arial'
+const DATA_FONT_SIZE = 9
+const BLACK = 'FF000000'
+const PASS_GREEN = 'FF008000'
+const FAIL_RED = 'FFFF0000'
+
+type StyleOptions = {
+  fontColor?: string
+  fontName?: string
+  fontSize?: number
+  horizontal?: string
+  vertical?: string
+}
 
 function getElements(parent: Document | Element, tagName: string, namespaceUri: string | null): Element[] {
   return Array.from(
@@ -27,6 +40,17 @@ function getElements(parent: Document | Element, tagName: string, namespaceUri: 
 
 function createElement(xmlDoc: Document, tagName: string, namespaceUri: string | null): Element {
   return namespaceUri ? xmlDoc.createElementNS(namespaceUri, tagName) : xmlDoc.createElement(tagName)
+}
+
+function findDirectChild(element: Element, tagName: string): Element | null {
+  const child = Array.from(element.childNodes).find(
+    (child) => child.nodeType === Node.ELEMENT_NODE && (child as Element).localName === tagName
+  )
+  return child ? (child as Element) : null
+}
+
+function appendStyleChild(parent: Element, child: Element) {
+  parent.insertBefore(child, findDirectChild(parent, 'extLst'))
 }
 
 function parseCellReference(cellRef: string) {
@@ -121,16 +145,21 @@ function removeDirectChildrenByName(element: Element, tagName: string) {
 
 function setCellValueFactory(xmlDoc: Document, namespaceUri: string | null) {
   return (cellRef: string, value: CellValue) => {
-    if (value === null || value === undefined || value === '') return
-    if (typeof value === 'number' && !Number.isFinite(value)) return
-
     const parsed = parseCellReference(cellRef)
-    if (!parsed) return
+    if (!parsed) return null
 
     const rowElement = findRow(xmlDoc, namespaceUri, parsed.row)
-    if (!rowElement) return
+    if (!rowElement) return null
 
     let cellElement = findCell(rowElement, namespaceUri, cellRef)
+
+    if (value === null || value === undefined || value === '' || (typeof value === 'number' && !Number.isFinite(value))) {
+      if (cellElement) {
+        clearCellContents(cellElement)
+      }
+      return cellElement
+    }
+
     if (!cellElement) {
       cellElement = createElement(xmlDoc, 'c', namespaceUri)
       cellElement.setAttribute('r', cellRef)
@@ -150,12 +179,159 @@ function setCellValueFactory(xmlDoc: Document, namespaceUri: string | null) {
       text.textContent = value
       inlineString.appendChild(text)
       cellElement.appendChild(inlineString)
-      return
+      return cellElement
     }
 
     const valueElement = createElement(xmlDoc, 'v', namespaceUri)
     valueElement.textContent = String(value)
     cellElement.appendChild(valueElement)
+    return cellElement
+  }
+}
+
+function normalizeText(value: CellValue): string {
+  return String(value ?? '').trim().toLowerCase()
+}
+
+function qualityFontColor(value: CellValue): string {
+  const normalized = normalizeText(value).replace(/\s+/g, '')
+
+  if (normalized === 'pass') return PASS_GREEN
+  if (normalized === 'fail') return FAIL_RED
+  return BLACK
+}
+
+function plateTapeFontColor(value: CellValue): string {
+  switch (normalizeText(value)) {
+    case 'red':
+      return 'FFFF0000'
+    case 'blue':
+      return 'FF0000FF'
+    case 'green':
+      return 'FF008000'
+    case 'orange':
+      return 'FFFF6600'
+    default:
+      return BLACK
+  }
+}
+
+class WorkbookStyleManager {
+  private fontCache = new Map<string, number>()
+  private styleCache = new Map<string, number>()
+  private stylesXml: string | undefined
+  private xmlDoc: Document | null = null
+  private namespaceUri: string | null = null
+  private fontsElement: Element | null = null
+  private cellXfsElement: Element | null = null
+  private zip: JSZip
+  private parser: DOMParser
+  private serializer: XMLSerializer
+
+  constructor(zip: JSZip, parser: DOMParser, serializer: XMLSerializer) {
+    this.zip = zip
+    this.parser = parser
+    this.serializer = serializer
+  }
+
+  async load() {
+    this.stylesXml = await this.zip.file('xl/styles.xml')?.async('string')
+    if (!this.stylesXml) return
+
+    const xmlDoc = this.parser.parseFromString(this.stylesXml, 'text/xml')
+    if (xmlDoc.getElementsByTagName('parsererror').length > 0) return
+
+    this.xmlDoc = xmlDoc
+    this.namespaceUri = xmlDoc.documentElement.namespaceURI
+    this.fontsElement = getElements(xmlDoc, 'fonts', this.namespaceUri)[0] || null
+    this.cellXfsElement = getElements(xmlDoc, 'cellXfs', this.namespaceUri)[0] || null
+  }
+
+  applyStyle(cellElement: Element | null, options: StyleOptions, fallbackStyleId?: string | null) {
+    if (!cellElement || !this.xmlDoc || !this.fontsElement || !this.cellXfsElement) return
+
+    const baseStyleId = Number(cellElement.getAttribute('s') ?? fallbackStyleId ?? 0)
+    const safeBaseStyleId = Number.isFinite(baseStyleId) ? baseStyleId : 0
+    const styleId = this.getOrCreateStyleId(safeBaseStyleId, options)
+    cellElement.setAttribute('s', String(styleId))
+  }
+
+  save() {
+    if (!this.xmlDoc || !this.stylesXml) return
+    this.zip.file('xl/styles.xml', this.serializer.serializeToString(this.xmlDoc))
+  }
+
+  private getOrCreateFontId(options: StyleOptions): number {
+    if (!this.xmlDoc || !this.fontsElement) return 0
+
+    const fontName = options.fontName || DATA_FONT_NAME
+    const fontSize = options.fontSize || DATA_FONT_SIZE
+    const fontColor = options.fontColor || BLACK
+    const key = `${fontName}|${fontSize}|${fontColor}`
+    const cached = this.fontCache.get(key)
+    if (cached !== undefined) return cached
+
+    const fontElement = createElement(this.xmlDoc, 'font', this.namespaceUri)
+
+    const sizeElement = createElement(this.xmlDoc, 'sz', this.namespaceUri)
+    sizeElement.setAttribute('val', String(fontSize))
+    fontElement.appendChild(sizeElement)
+
+    const colorElement = createElement(this.xmlDoc, 'color', this.namespaceUri)
+    colorElement.setAttribute('rgb', fontColor)
+    fontElement.appendChild(colorElement)
+
+    const nameElement = createElement(this.xmlDoc, 'name', this.namespaceUri)
+    nameElement.setAttribute('val', fontName)
+    fontElement.appendChild(nameElement)
+
+    const familyElement = createElement(this.xmlDoc, 'family', this.namespaceUri)
+    familyElement.setAttribute('val', '2')
+    fontElement.appendChild(familyElement)
+
+    appendStyleChild(this.fontsElement, fontElement)
+    const fontId = getElements(this.fontsElement, 'font', this.namespaceUri).length - 1
+    this.fontsElement.setAttribute('count', String(fontId + 1))
+    this.fontCache.set(key, fontId)
+    return fontId
+  }
+
+  private getOrCreateStyleId(baseStyleId: number, options: StyleOptions): number {
+    if (!this.xmlDoc || !this.cellXfsElement) return baseStyleId
+
+    const key = `${baseStyleId}|${options.fontName || DATA_FONT_NAME}|${options.fontSize || DATA_FONT_SIZE}|${options.fontColor || BLACK}|${options.horizontal || ''}|${options.vertical || ''}`
+    const cached = this.styleCache.get(key)
+    if (cached !== undefined) return cached
+
+    const existingStyles = getElements(this.cellXfsElement, 'xf', this.namespaceUri)
+    const baseStyle = existingStyles[baseStyleId] || existingStyles[0]
+    if (!baseStyle) return baseStyleId
+
+    const styleElement = baseStyle.cloneNode(true) as Element
+    styleElement.setAttribute('fontId', String(this.getOrCreateFontId(options)))
+    styleElement.setAttribute('applyFont', '1')
+
+    if (options.horizontal || options.vertical) {
+      let alignmentElement = findDirectChild(styleElement, 'alignment')
+      if (!alignmentElement) {
+        alignmentElement = createElement(this.xmlDoc, 'alignment', this.namespaceUri)
+        styleElement.appendChild(alignmentElement)
+      }
+
+      if (options.horizontal) {
+        alignmentElement.setAttribute('horizontal', options.horizontal)
+      }
+      if (options.vertical) {
+        alignmentElement.setAttribute('vertical', options.vertical)
+      }
+      styleElement.setAttribute('applyAlignment', '1')
+    }
+
+    appendStyleChild(this.cellXfsElement, styleElement)
+    const styleId = getElements(this.cellXfsElement, 'xf', this.namespaceUri).length - 1
+    this.cellXfsElement.setAttribute('count', String(styleId + 1))
+    this.styleCache.set(key, styleId)
+    return styleId
   }
 }
 
@@ -463,8 +639,32 @@ export async function injectDataIntoExcelTemplate(
   }
 
   const serializer = new XMLSerializer()
+  const styleManager = new WorkbookStyleManager(zip, parser, serializer)
+  await styleManager.load()
+
   const namespaceUri = xmlDoc.documentElement.namespaceURI
   const setCellValue = setCellValueFactory(xmlDoc, namespaceUri)
+  const getCellStyleId = (cellRef: string) => {
+    const parsed = parseCellReference(cellRef)
+    if (!parsed) return null
+    const rowElement = findRow(xmlDoc, namespaceUri, parsed.row)
+    const cellElement = rowElement ? findCell(rowElement, namespaceUri, cellRef) : null
+    return cellElement?.getAttribute('s') || null
+  }
+  const setStyledCellValue = (
+    cellRef: string,
+    value: CellValue,
+    options: StyleOptions = {},
+    fallbackCellRef?: string
+  ) => {
+    const cellElement = setCellValue(cellRef, value)
+    styleManager.applyStyle(cellElement, {
+      fontName: DATA_FONT_NAME,
+      fontSize: DATA_FONT_SIZE,
+      ...options,
+    }, fallbackCellRef ? getCellStyleId(fallbackCellRef) : null)
+    return cellElement
+  }
 
   const sortedUnits = sortUnits(tdsData.units)
   const renderedUnitRows = Math.max(sortedUnits.length, 1)
@@ -483,38 +683,36 @@ export async function injectDataIntoExcelTemplate(
   setCellValue('D2', tdsData.machine?.machine_name || '')
 
   // Job Information
-  setCellValue('B4', formatDate(tdsData.date))
-  setCellValue('E4', tdsData.order_number)
-  setCellValue('G4', tdsData.num_units?.toString() || '')
-  setCellValue('I4', tdsData.job_type || '')
+  setStyledCellValue('B4', formatDate(tdsData.date))
+  setStyledCellValue('E4', tdsData.order_number)
+  setStyledCellValue('G4', tdsData.num_units?.toString() || '')
+  setStyledCellValue('I4', tdsData.job_type || '')
 
-  setCellValue('D5', tdsData.job_product_name || '')
-  setCellValue('D6', tdsData.design_artwork_bromide || '')
+  setStyledCellValue('D5', tdsData.job_product_name || '')
+  setStyledCellValue('D6', tdsData.design_artwork_bromide || '')
 
-  setCellValue('C7', tdsData.operator_name || '')
-  setCellValue('E7', tdsData.speed_mpm?.toString() || '')
-  setCellValue('G7', tdsData.downtime_min?.toString() || '')
-  setCellValue('I7', tdsData.shift_no || '')
+  setStyledCellValue('C7', tdsData.operator_name || '')
+  setStyledCellValue('E7', tdsData.speed_mpm?.toString() || '')
+  setStyledCellValue('G7', tdsData.downtime_min?.toString() || '')
+  setStyledCellValue('I7', tdsData.shift_no || '')
 
-  setCellValue('C8', tdsData.action_on_job || '')
+  setStyledCellValue('C8', tdsData.action_on_job || '')
 
   // Substrate section
-  setCellValue('C11', tdsData.substrate_laminate || '')
-  setCellValue('G11', tdsData.surface_type || '')
-  setCellValue('I11', tdsData.width_mm?.toString() || '')
+  setStyledCellValue('C11', tdsData.substrate_laminate || '')
+  setStyledCellValue('G11', tdsData.surface_type || '')
+  setStyledCellValue('I11', tdsData.width_mm?.toString() || '')
 
   // Corona
-  setCellValue('C12', tdsData.corona_treatment ? 'Yes' : 'No')
-  if (tdsData.corona_treatment) {
-    setCellValue('E12', tdsData.corona_wattage?.toString() || '')
-    setCellValue('G12', tdsData.corona_treatment_side || '')
-    setCellValue('I12', tdsData.corona_dyne_level?.toString() || '')
-  }
+  setStyledCellValue('C12', tdsData.corona_treatment ? 'Yes' : 'No')
+  setStyledCellValue('E12', tdsData.corona_treatment ? tdsData.corona_wattage?.toString() || '' : '')
+  setStyledCellValue('G12', tdsData.corona_treatment ? tdsData.corona_treatment_side || '' : '')
+  setStyledCellValue('I12', tdsData.corona_treatment ? tdsData.corona_dyne_level?.toString() || '' : '')
 
   // Foil
-  setCellValue('C13', tdsData.foil_supplier || '')
-  setCellValue('E13', tdsData.foil_type || '')
-  setCellValue('G13', tdsData.foil_colour_finish || '')
+  setStyledCellValue('C13', tdsData.foil_supplier || '')
+  setStyledCellValue('E13', tdsData.foil_type || '')
+  setStyledCellValue('G13', tdsData.foil_colour_finish || '')
 
   // Units table
   sortedUnits.forEach((unit, index) => {
@@ -529,27 +727,52 @@ export async function injectDataIntoExcelTemplate(
     setCellValue(`G${row}`, unit.lamp_hrs?.toString() || '')
     setCellValue(`H${row}`, unit.intensity_pct?.toString() || '')
     setCellValue(`I${row}`, unit.unit_remarks || '')
-    setCellValue(`J${row}`, unit.plate_tape || '')
+    setStyledCellValue(`J${row}`, unit.plate_tape || '', {
+      fontColor: plateTapeFontColor(unit.plate_tape),
+      horizontal: 'center',
+      vertical: 'center',
+    }, `J${UNIT_TABLE_START_ROW}`)
   })
 
   // Quality parameters
   const qualityRow = shiftedRow(QUALITY_VALUES_TEMPLATE_ROW)
-  setCellValue(`B${qualityRow}`, tdsData.tape_test || '')
-  setCellValue(`C${qualityRow}`, tdsData.flow_marks || '')
-  setCellValue(`D${qualityRow}`, tdsData.flex_test || '')
-  setCellValue(`E${qualityRow}`, tdsData.graphite_test || '')
-  setCellValue(`F${qualityRow}`, tdsData.adhesion_test || '')
-  setCellValue(`G${qualityRow}`, tdsData.rub_scuff_test || '')
-  setCellValue(`H${qualityRow}`, tdsData.ink_lay_tone_check || '')
-  setCellValue(`I${qualityRow}`, tdsData.overall_result || '')
+  const overallResult = tdsData.overall_result || computeOverallResult({
+    tape_test: tdsData.tape_test,
+    flow_marks: tdsData.flow_marks,
+    flex_test: tdsData.flex_test,
+    graphite_test: tdsData.graphite_test,
+    adhesion_test: tdsData.adhesion_test,
+    rub_scuff_test: tdsData.rub_scuff_test,
+    ink_lay_tone_check: tdsData.ink_lay_tone_check,
+  })
+  const qualityValues = [
+    { column: 'A', value: tdsData.tape_test || '' },
+    { column: 'B', value: tdsData.flow_marks || '' },
+    { column: 'C', value: tdsData.flex_test || '' },
+    { column: 'D', value: tdsData.graphite_test || '' },
+    { column: 'E', value: tdsData.adhesion_test || '' },
+    { column: 'F', value: tdsData.rub_scuff_test || '' },
+    { column: 'G', value: tdsData.ink_lay_tone_check || '' },
+    { column: 'H', value: overallResult },
+  ]
 
-  setCellValue(`C${shiftedRow(QUALITY_NOTES_TEMPLATE_ROW)}`, tdsData.quality_notes || '')
+  qualityValues.forEach(({ column, value }) => {
+    setStyledCellValue(`${column}${qualityRow}`, value, {
+      fontColor: qualityFontColor(value),
+      horizontal: 'center',
+      vertical: 'center',
+    }, `A${qualityRow}`)
+  })
+  clearCellValue(xmlDoc, namespaceUri, `I${qualityRow}`)
+
+  setStyledCellValue(`C${shiftedRow(QUALITY_NOTES_TEMPLATE_ROW)}`, tdsData.quality_notes || '')
 
   // Footer
   setCellValue(`A${shiftedRow(PREPARED_BY_TEMPLATE_ROW)}`, tdsData.prepared_by)
   setCellValue(`A${shiftedRow(PREPARED_AT_TEMPLATE_ROW)}`, formatDate(tdsData.prepared_at))
 
   zip.file(sheetPath, serializer.serializeToString(xmlDoc))
+  styleManager.save()
   await forceWorkbookRecalculation(zip, parser, serializer)
 
   return await zip.generateAsync({ type: 'blob' })

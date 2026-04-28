@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '@/hooks/useAuth'
 import { useTDSRecord, useCreateTDS, useUpdateTDS, useUpdateTDSStatus } from '@/hooks/useTDS'
@@ -34,6 +34,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { toast } from '@/components/ui/use-toast'
 import { ArrowLeft, Save, Loader2, Download, CheckCircle, CheckCircle2, Cloud, AlertCircle } from 'lucide-react'
 import { formatDateTime } from '@/lib/utils'
+import type { TDSRecordWithRelations } from '@/types/tds.types'
 
 export default function TDSEditor() {
   const { id } = useParams()
@@ -53,7 +54,11 @@ export default function TDSEditor() {
   const [saving, setSaving] = useState(false)
   const [activeSubTab, setActiveSubTab] = useState('job')
 
-  const { exportToExcel, exportToPDF, exportToWord, exporting } = useExport(id || '')
+  const exportRecord = useMemo<TDSRecordWithRelations | undefined>(() => {
+    if (!tdsRecord) return undefined
+    return { ...tdsRecord, ...formData, units } as TDSRecordWithRelations
+  }, [tdsRecord, formData, units])
+  const { exportToExcel, exportToPDF, exportToWord, exporting } = useExport(id || '', exportRecord)
   const isOwner = formData.prepared_by === user?.id
 
   // Filter machines by selected customer
