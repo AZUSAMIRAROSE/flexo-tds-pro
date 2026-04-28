@@ -21,10 +21,7 @@ export function UnitSequenceTable() {
     updateUnit(index, { anilox_unit: current === 'LPI' ? 'LCM' : 'LPI' })
   }
 
-  const toggleVolumeUnit = (index: number) => {
-    const current = units[index].volume_unit
-    updateUnit(index, { volume_unit: current === 'CCM' ? 'BCM' : 'CCM' })
-  }
+  // Volume unit is always CCM per project rules (NOT BCM)
 
   const handlePasteSubmit = () => {
     try {
@@ -215,7 +212,7 @@ export function UnitSequenceTable() {
                   <div className="space-y-1.5">
                     <Label className="text-[11px] text-muted-foreground uppercase tracking-wider flex justify-between items-center">
                       <span>Volume</span>
-                      <button type="button" onClick={() => toggleVolumeUnit(originalIndex)} className="text-primary hover:text-primary/80 font-bold transition-colors">{unit.volume_unit} <ArrowLeftRight className="inline h-3 w-3 ml-0.5"/></button>
+                      <span className="text-primary font-bold">CCM</span>
                     </Label>
                     <Input
                       data-field="volume_value"

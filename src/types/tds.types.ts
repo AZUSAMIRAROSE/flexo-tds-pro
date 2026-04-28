@@ -34,7 +34,7 @@ export type TestResult = 'Pass' | 'Fail' | 'N/A'
 export type OverallResult = 'Pass' | 'Conditional' | 'Fail'
 export type PlateTapeColor = 'Red' | 'Blue' | 'Green' | 'Orange'
 export type AniloxUnit = 'LPI' | 'LCM'
-export type VolumeUnit = 'CCM' | 'BCM'
+export type VolumeUnit = 'CCM'
 export type UserRoleType = 'Admin' | 'Technical Officer' | 'Viewer'
 
 export interface BatchCodeSuggestion {

@@ -3,6 +3,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { Toaster } from '@/components/ui/toaster'
 import ProtectedRoute from '@/components/layout/ProtectedRoute'
 import Login from '@/pages/Login'
+import ResetPassword from '@/pages/ResetPassword'
 import Dashboard from '@/pages/Dashboard'
 import TDSList from '@/pages/TDSList'
 import TDSEditor from '@/pages/TDSEditor'
@@ -24,8 +25,11 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
         <Routes>
+          {/* Public routes */}
           <Route path="/login" element={<Login />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
           
+          {/* Protected routes — any authenticated user */}
           <Route
             path="/dashboard"
             element={
@@ -47,7 +51,7 @@ function App() {
           <Route
             path="/tds/new"
             element={
-              <ProtectedRoute>
+              <ProtectedRoute allowedRoles={['Admin', 'Technical Officer']}>
                 <TDSEditor />
               </ProtectedRoute>
             }
@@ -65,7 +69,7 @@ function App() {
           <Route
             path="/customers"
             element={
-              <ProtectedRoute>
+              <ProtectedRoute allowedRoles={['Admin', 'Technical Officer']}>
                 <Customers />
               </ProtectedRoute>
             }
@@ -74,12 +78,13 @@ function App() {
           <Route
             path="/machines"
             element={
-              <ProtectedRoute>
+              <ProtectedRoute allowedRoles={['Admin', 'Technical Officer']}>
                 <Machines />
               </ProtectedRoute>
             }
           />
           
+          {/* Admin-only settings */}
           <Route
             path="/settings"
             element={
