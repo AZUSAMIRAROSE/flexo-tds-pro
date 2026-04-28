@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import type { FormEvent } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Navigate, useNavigate } from 'react-router-dom'
 import { useAuth } from '@/hooks/useAuth'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -22,9 +22,8 @@ export default function Login() {
   const [loading, setLoading] = useState(false)
   const [resetSent, setResetSent] = useState(false)
 
-  // Redirect if already logged in
   if (user) {
-    navigate('/dashboard')
+    return <Navigate to="/dashboard" replace />
   }
 
   const resetFields = () => {

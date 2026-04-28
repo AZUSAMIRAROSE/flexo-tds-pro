@@ -84,7 +84,7 @@ function App() {
             }
           />
           
-          {/* Admin-only settings */}
+          {/* Account settings with admin-only controls inside the page */}
           <Route
             path="/settings"
             element={

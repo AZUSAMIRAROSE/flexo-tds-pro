@@ -8,7 +8,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { Edit, Copy, Download, Trash2, MoreVertical, Loader2 } from 'lucide-react'
+import { Edit, Download, Trash2, MoreVertical, Loader2 } from 'lucide-react'
 
 interface RowActionsProps {
   record: any
@@ -17,7 +17,7 @@ interface RowActionsProps {
 }
 
 export function RowActions({ record, canDelete, onDelete }: RowActionsProps) {
-  const { exportToExcel, exportToPDF, exporting } = useExport(record.id)
+  const { exportToExcel, exportToPDF, exporting } = useExport(record.id, record)
 
   return (
     <DropdownMenu>
@@ -37,11 +37,6 @@ export function RowActions({ record, canDelete, onDelete }: RowActionsProps) {
             Edit
           </Link>
         </DropdownMenuItem>
-        <DropdownMenuItem>
-          <Copy className="mr-2 h-4 w-4" />
-          Duplicate
-        </DropdownMenuItem>
-        <DropdownMenuSeparator />
         <DropdownMenuItem
           onClick={() => exportToExcel()}
           disabled={exporting}

@@ -6,11 +6,14 @@ import { injectDataIntoExcelTemplate, downloadExcel } from '@/lib/exportUtils'
 import { generatePDF, downloadPDF } from '@/lib/pdfExport'
 import { generateWordDocument, downloadWord } from '@/lib/wordExport'
 import { formatDate } from '@/lib/utils'
+import { logActivity } from '@/lib/activityLog'
+import type { TDSRecordWithRelations } from '@/types/tds.types'
 
-export function useExport(tdsId: string) {
+export function useExport(tdsId: string, initialRecord?: TDSRecordWithRelations | null) {
   const [exporting, setExporting] = useState(false)
-  const { data: tdsRecord } = useTDSRecord(tdsId)
+  const { data: fetchedRecord } = useTDSRecord(initialRecord ? undefined : tdsId)
   const { downloadTemplate } = useTemplates()
+  const tdsRecord = initialRecord || fetchedRecord
 
   const getFilename = (extension: string) => {
     if (!tdsRecord) return `TDS.${extension}`
@@ -30,14 +33,10 @@ export function useExport(tdsId: string) {
       const blob = await injectDataIntoExcelTemplate(templateBuffer, tdsRecord)
       downloadExcel(blob, getFilename('xlsx'))
 
-      // Log export activity
-      await fetch('/api/log-activity', {
-        method: 'POST',
-        body: JSON.stringify({
-          tds_record_id: tdsId,
-          action: 'exported',
-          new_value: 'Excel',
-        }),
+      await logActivity({
+        tdsRecordId: tdsId,
+        action: 'exported',
+        newValue: 'Excel',
       })
 
       toast({
@@ -63,6 +62,12 @@ export function useExport(tdsId: string) {
       const blob = await generatePDF(tdsRecord)
       downloadPDF(blob, getFilename('pdf'))
 
+      await logActivity({
+        tdsRecordId: tdsId,
+        action: 'exported',
+        newValue: 'PDF',
+      })
+
       toast({
         title: 'Export successful',
         description: 'PDF file has been downloaded.',
@@ -85,6 +90,12 @@ export function useExport(tdsId: string) {
     try {
       const blob = await generateWordDocument(tdsRecord)
       downloadWord(blob, getFilename('docx'))
+
+      await logActivity({
+        tdsRecordId: tdsId,
+        action: 'exported',
+        newValue: 'Word',
+      })
 
       toast({
         title: 'Export successful',

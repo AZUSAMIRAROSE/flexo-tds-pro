@@ -31,14 +31,9 @@ import { toast } from '@/components/ui/use-toast'
 import { Loader2, ShieldCheck, ShieldAlert, Eye } from 'lucide-react'
 import { USER_ROLES } from '@/lib/constants'
 import { useAuth } from '@/hooks/useAuth'
+import type { UserRole } from '@/types/tds.types'
 
-interface UserWithRole {
-  user_id: string
-  role: string
-  email: string
-  full_name: string
-  created_at: string
-}
+type UserWithRole = UserRole
 
 export function UserManagement() {
   const { user: currentUser } = useAuth()
@@ -62,7 +57,7 @@ export function UserManagement() {
         .order('created_at', { ascending: true })
 
       if (error) throw error
-      return (data as unknown) as UserWithRole[]
+      return (data || []) as UserWithRole[]
     },
   })
 

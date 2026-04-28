@@ -10,6 +10,144 @@ import type {
 } from '@/types/tds.types'
 import { toast } from '@/components/ui/use-toast'
 import { computeOverallResult } from '@/lib/utils'
+import { logActivity } from '@/lib/activityLog'
+
+const TDS_RECORD_COLUMNS = [
+  'customer_id',
+  'machine_id',
+  'date',
+  'order_number',
+  'num_units',
+  'job_type',
+  'job_product_name',
+  'design_artwork_bromide',
+  'operator_name',
+  'speed_mpm',
+  'downtime_min',
+  'shift_no',
+  'action_on_job',
+  'substrate_laminate',
+  'surface_type',
+  'width_mm',
+  'corona_treatment',
+  'corona_wattage',
+  'corona_treatment_side',
+  'corona_dyne_level',
+  'foil_supplier',
+  'foil_type',
+  'foil_colour_finish',
+  'tape_test',
+  'flow_marks',
+  'flex_test',
+  'graphite_test',
+  'adhesion_test',
+  'rub_scuff_test',
+  'ink_lay_tone_check',
+  'overall_result',
+  'quality_notes',
+  'status',
+  'prepared_by',
+  'prepared_at',
+  'approved_by',
+  'approved_at',
+] as const
+
+const TDS_UNIT_COLUMNS = [
+  'tds_record_id',
+  'unit_no',
+  'color_station',
+  'anilox_value',
+  'anilox_unit',
+  'volume_value',
+  'volume_unit',
+  'ink_name',
+  'batch_code',
+  'lamp_hrs',
+  'intensity_pct',
+  'unit_remarks',
+  'plate_tape',
+] as const
+
+const NUMERIC_RULES: Record<string, { min?: number; max?: number; integer?: boolean }> = {
+  num_units: { min: 1, max: 20, integer: true },
+  speed_mpm: { min: 0, max: 500, integer: true },
+  downtime_min: { min: 0, max: 999, integer: true },
+  width_mm: { min: 50, max: 2000, integer: true },
+  corona_wattage: { min: 0, max: 2000, integer: true },
+  corona_dyne_level: { min: 0, max: 100, integer: true },
+  unit_no: { min: 1, max: 20, integer: true },
+  lamp_hrs: { min: 0, max: 9999, integer: true },
+  intensity_pct: { min: 0, max: 100, integer: true },
+}
+
+function normalizePayloadValue(column: string, value: unknown) {
+  if (value === undefined) return undefined
+  if (value === '') return null
+
+  const numericRule = NUMERIC_RULES[column]
+  if (!numericRule) {
+    if (typeof value === 'number' && !Number.isFinite(value)) return null
+    return value
+  }
+
+  if (value === null) return null
+
+  const numericValue = typeof value === 'number' ? value : Number(value)
+  if (!Number.isFinite(numericValue)) return null
+
+  return numericRule.integer ? Math.trunc(numericValue) : numericValue
+}
+
+function assertNumericRules(payload: Record<string, unknown>, context: string) {
+  Object.entries(NUMERIC_RULES).forEach(([column, rule]) => {
+    const value = payload[column]
+    if (value === null || value === undefined) return
+    if (typeof value !== 'number' || !Number.isFinite(value)) return
+
+    if (rule.min !== undefined && value < rule.min) {
+      throw new Error(`${context}: ${column} must be at least ${rule.min}.`)
+    }
+
+    if (rule.max !== undefined && value > rule.max) {
+      throw new Error(`${context}: ${column} must be ${rule.max} or less.`)
+    }
+  })
+}
+
+function assertUnitCheckConstraints(payload: Record<string, unknown>) {
+  if (payload.lamp_hrs === null || payload.lamp_hrs === undefined) return
+  const lampHours = payload.lamp_hrs
+  if (typeof lampHours !== 'number' || lampHours < 0 || lampHours > 9999) {
+    throw new Error('Lamp Hrs must be between 0 and 9999.')
+  }
+}
+
+function preparePayload<T extends readonly string[]>(source: Record<string, unknown>, columns: T, context: string) {
+  const payload = pickPayload(source, columns)
+  assertNumericRules(payload, context)
+  return payload
+}
+
+function pickPayload<T extends readonly string[]>(source: Record<string, unknown>, columns: T) {
+  return columns.reduce((payload, column) => {
+    const value = normalizePayloadValue(column, source[column])
+    if (value !== undefined) {
+      payload[column] = value
+    }
+    return payload
+  }, {} as Record<string, unknown>)
+}
+
+function cleanTDSRecordPayload(record: TDSRecordInsert | TDSRecordUpdate) {
+  return preparePayload(record as Record<string, unknown>, TDS_RECORD_COLUMNS, 'TDS record')
+}
+
+function cleanTDSUnitPayload(unit: TDSUnitInsert | TDSUnitUpdate, index?: number) {
+  const context = index === undefined ? 'TDS unit' : `TDS unit ${index + 1}`
+  const payload = preparePayload(unit as Record<string, unknown>, TDS_UNIT_COLUMNS, context)
+  assertUnitCheckConstraints(payload)
+  return payload
+}
 
 export function useTDSRecords(filters?: {
   customerId?: string
@@ -17,18 +155,27 @@ export function useTDSRecords(filters?: {
   status?: string
   dateFrom?: string
   dateTo?: string
+  includeUnits?: boolean
 }) {
   return useQuery({
     queryKey: ['tds-records', filters],
     queryFn: async () => {
-      let query = supabase
-        .from('tds_records')
-        .select(`
+      const selectClause = filters?.includeUnits
+        ? `
           *,
           customer:customers(*),
           machine:machines(*),
           units:tds_units(*)
-        `)
+        `
+        : `
+          *,
+          customer:customers(*),
+          machine:machines(*)
+        `
+
+      let query = supabase
+        .from('tds_records')
+        .select(selectClause)
         .order('date', { ascending: false })
 
       if (filters?.customerId) {
@@ -99,7 +246,7 @@ export function useCreateTDS() {
       // Create TDS record
       const { data: tdsRecord, error: recordError } = await supabase
         .from('tds_records')
-        .insert(record as any)
+        .insert(cleanTDSRecordPayload(record) as any)
         .select()
         .single()
 
@@ -107,8 +254,8 @@ export function useCreateTDS() {
 
       // Create units
       if (units.length > 0) {
-        const unitsWithTdsId = units.map(unit => ({
-          ...unit,
+        const unitsWithTdsId = units.map((unit, index) => ({
+          ...cleanTDSUnitPayload(unit, index),
           tds_record_id: tdsRecord.id,
         }))
 
@@ -119,9 +266,8 @@ export function useCreateTDS() {
         if (unitsError) throw unitsError
       }
 
-      // Log activity
-      await supabase.from('activity_log').insert({
-        tds_record_id: tdsRecord.id,
+      await logActivity({
+        tdsRecordId: tdsRecord.id,
         action: 'created',
       })
 
@@ -186,7 +332,7 @@ export function useUpdateTDS() {
       // Update TDS record
       const { error } = await supabase
         .from('tds_records')
-        .update(updates as any)
+        .update(cleanTDSRecordPayload(updates) as any)
         .eq('id', id)
         .select()
         .single()
@@ -218,12 +364,12 @@ export function useUpdateTDS() {
         }
 
         // Update or insert units
-        for (const unit of unitUpdates) {
+        for (const [index, unit] of unitUpdates.entries()) {
           if (unit.id && newUnitIds.has(unit.id)) {
             // Update existing unit
             const { error: unitError } = await supabase
               .from('tds_units')
-              .update(unit as any)
+              .update(cleanTDSUnitPayload(unit, index) as any)
               .eq('id', unit.id)
 
             if (unitError) throw unitError
@@ -232,7 +378,7 @@ export function useUpdateTDS() {
             const { error: insertError } = await supabase
               .from('tds_units')
               .insert({
-                ...unit,
+                ...cleanTDSUnitPayload(unit, index),
                 tds_record_id: id,
               } as any)
 
@@ -241,9 +387,8 @@ export function useUpdateTDS() {
         }
       }
 
-      // Log activity
-      await supabase.from('activity_log').insert({
-        tds_record_id: id,
+      await logActivity({
+        tdsRecordId: id,
         action: 'updated',
       })
 
@@ -316,9 +461,8 @@ export function useUpdateTDSStatus() {
 
       if (error) throw error
 
-      // Log activity
-      await supabase.from('activity_log').insert({
-        tds_record_id: id,
+      await logActivity({
+        tdsRecordId: id,
         action: status.toLowerCase(),
       })
 

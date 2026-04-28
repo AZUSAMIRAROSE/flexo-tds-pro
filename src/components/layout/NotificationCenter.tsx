@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
+import type { UserRole } from '@/types/tds.types'
 import {
   Bell,
   Activity,
@@ -73,7 +74,7 @@ export function NotificationCenter() {
         if (usersError) {
           console.warn('Unable to load notification user names:', usersError)
         } else {
-          ;(users || []).forEach((user) => {
+          ;(users || []).forEach((user: Pick<UserRole, 'user_id' | 'full_name'>) => {
             if (user.full_name) {
               fullNameByUserId.set(user.user_id, user.full_name)
             }

@@ -10,6 +10,17 @@ import { Plus, Trash2, ArrowLeftRight } from 'lucide-react'
 import { toast } from '@/components/ui/use-toast'
 import type { TDSUnit } from '@/types/tds.types'
 
+function parseNumberInput(value: string) {
+  if (value.trim() === '') return null
+  const numericValue = Number(value)
+  return Number.isFinite(numericValue) ? numericValue : null
+}
+
+function parseIntegerInput(value: string) {
+  const numericValue = parseNumberInput(value)
+  return numericValue === null ? null : Math.trunc(numericValue)
+}
+
 export function UnitSequenceTable() {
   const { units, updateUnit, addUnit, removeUnit } = useTDSFormStore()
 
@@ -37,12 +48,12 @@ export function UnitSequenceTable() {
         const updates: Partial<TDSUnit> = {}
 
         if (cells[0]) updates.color_station = cells[0].trim()
-        if (cells[1]) updates.anilox_value = parseFloat(cells[1])
-        if (cells[2]) updates.volume_value = parseFloat(cells[2])
+        if (cells[1]) updates.anilox_value = parseNumberInput(cells[1])
+        if (cells[2]) updates.volume_value = parseNumberInput(cells[2])
         if (cells[3]) updates.ink_name = cells[3].trim()
         if (cells[4]) updates.batch_code = cells[4].trim()
-        if (cells[5]) updates.lamp_hrs = parseInt(cells[5])
-        if (cells[6]) updates.intensity_pct = parseInt(cells[6])
+        if (cells[5]) updates.lamp_hrs = parseIntegerInput(cells[5])
+        if (cells[6]) updates.intensity_pct = parseIntegerInput(cells[6])
         if (cells[7]) updates.plate_tape = cells[7].trim() as TDSUnit['plate_tape']
 
         updateUnit(unitIndex, updates)
@@ -202,8 +213,9 @@ export function UnitSequenceTable() {
                       data-unit-index={originalIndex}
                       onKeyDown={(e) => handleKeyDown(e, originalIndex, 'anilox_value')}
                       type="number"
-                      value={unit.anilox_value || ''}
-                      onChange={(e) => updateUnit(originalIndex, { anilox_value: parseFloat(e.target.value) })}
+                      min={0}
+                      value={unit.anilox_value ?? ''}
+                      onChange={(e) => updateUnit(originalIndex, { anilox_value: parseNumberInput(e.target.value) })}
                       placeholder="360"
                       className="h-10 bg-white/[0.02]"
                     />
@@ -219,9 +231,10 @@ export function UnitSequenceTable() {
                       data-unit-index={originalIndex}
                       onKeyDown={(e) => handleKeyDown(e, originalIndex, 'volume_value')}
                       type="number"
+                      min={0}
                       step="0.1"
-                      value={unit.volume_value || ''}
-                      onChange={(e) => updateUnit(originalIndex, { volume_value: parseFloat(e.target.value) })}
+                      value={unit.volume_value ?? ''}
+                      onChange={(e) => updateUnit(originalIndex, { volume_value: parseNumberInput(e.target.value) })}
                       placeholder="4.5"
                       className="h-10 bg-white/[0.02]"
                     />
@@ -243,8 +256,10 @@ export function UnitSequenceTable() {
                         data-unit-index={originalIndex}
                         onKeyDown={(e) => handleKeyDown(e, originalIndex, 'lamp_hrs')}
                         type="number"
-                        value={unit.lamp_hrs || ''}
-                        onChange={(e) => updateUnit(originalIndex, { lamp_hrs: parseInt(e.target.value) })}
+                        min={0}
+                        max={9999}
+                        value={unit.lamp_hrs ?? ''}
+                        onChange={(e) => updateUnit(originalIndex, { lamp_hrs: parseIntegerInput(e.target.value) })}
                         placeholder="1200"
                         className="h-10 bg-white/[0.02]"
                       />
@@ -258,8 +273,8 @@ export function UnitSequenceTable() {
                         type="number"
                         min={0}
                         max={100}
-                        value={unit.intensity_pct || ''}
-                        onChange={(e) => updateUnit(originalIndex, { intensity_pct: parseInt(e.target.value) })}
+                        value={unit.intensity_pct ?? ''}
+                        onChange={(e) => updateUnit(originalIndex, { intensity_pct: parseIntegerInput(e.target.value) })}
                         placeholder="85"
                         className="h-10 bg-white/[0.02]"
                       />

@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
+import type { UserRole } from '@/types/tds.types'
 
 export interface DashboardKPIs {
   totalTDS: number
@@ -151,7 +152,7 @@ async function fetchDashboardData() {
     if (usersError) {
       console.warn('Unable to load dashboard activity user names:', usersError)
     } else {
-      ;(users || []).forEach((user) => {
+      ;(users || []).forEach((user: Pick<UserRole, 'user_id' | 'full_name'>) => {
         if (user.full_name) {
           fullNameByUserId.set(user.user_id, user.full_name)
         }

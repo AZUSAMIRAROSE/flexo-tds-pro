@@ -54,6 +54,7 @@ export default function TDSEditor() {
   const [activeSubTab, setActiveSubTab] = useState('job')
 
   const { exportToExcel, exportToPDF, exportToWord, exporting } = useExport(id || '')
+  const isOwner = formData.prepared_by === user?.id
 
   // Filter machines by selected customer
   const machines = allMachines?.filter(m => m.customer_id === formData.customer_id) || []
@@ -110,6 +111,15 @@ export default function TDSEditor() {
   const handleSave = async (changeStatus?: 'Completed' | 'Approved') => {
     setSaving(true)
     try {
+      if (!user?.id) {
+        toast({
+          variant: 'destructive',
+          title: 'Session Error',
+          description: 'Your session is not ready. Please refresh and sign in again.',
+        })
+        return
+      }
+
       // Validate required fields
       if (!formData.order_number) {
         toast({
@@ -135,7 +145,7 @@ export default function TDSEditor() {
       const dataToSave = {
         ...cleanFormData,
         customer_id: formData.customer_id,
-        prepared_by: user?.id,
+        ...(isNew ? { prepared_by: user.id } : {}),
       }
 
       if (isNew) {
@@ -143,6 +153,11 @@ export default function TDSEditor() {
           record: dataToSave as any,
           units: units,
         })
+
+        if (changeStatus) {
+          await statusMutation.mutateAsync({ id: result.id, status: changeStatus })
+        }
+
         markClean()
         navigate(`/tds/${result.id}`)
       } else {
@@ -152,11 +167,10 @@ export default function TDSEditor() {
           unitUpdates: units as any,
         })
         markClean()
-      }
 
-      // Change status if requested
-      if (changeStatus && id) {
-        await statusMutation.mutateAsync({ id, status: changeStatus })
+        if (changeStatus) {
+          await statusMutation.mutateAsync({ id: id!, status: changeStatus })
+        }
       }
     } catch (error) {
       console.error('Save error:', error)
@@ -167,9 +181,9 @@ export default function TDSEditor() {
 
   const canEdit = () => {
     if (isNew) return true
-    if (formData.status === 'Draft') return true
-    if (formData.status === 'Completed' && (isTechnicalOfficer() || isAdmin())) return true
-    if (formData.status === 'Approved' && isAdmin()) return true
+    if (isAdmin()) return true
+    if (formData.status === 'Draft') return isTechnicalOfficer() && isOwner
+    if (formData.status === 'Completed') return isTechnicalOfficer() && isOwner
     return false
   }
 
@@ -178,7 +192,8 @@ export default function TDSEditor() {
   }
 
   const canComplete = () => {
-    return formData.status === 'Draft' && (isTechnicalOfficer() || isAdmin())
+    if (isAdmin()) return formData.status === 'Draft'
+    return formData.status === 'Draft' && isTechnicalOfficer() && isOwner
   }
 
   const { isSaving: autoSaving } = useAutoSave(id, canEdit())

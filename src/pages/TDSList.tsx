@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { Link } from "react-router-dom";
 import { useTDSRecords, useDeleteTDS } from '@/hooks/useTDS'
 import { useCustomers } from '@/hooks/useCustomers'
@@ -50,7 +50,7 @@ import {
 const ITEMS_PER_PAGE = 25
 
 export default function TDSList() {
-  const { isAdmin, isTechnicalOfficer } = useAuth()
+  const { user, isAdmin, isTechnicalOfficer } = useAuth()
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedCustomer, setSelectedCustomer] = useState<string>('all')
   const [selectedMachine, setSelectedMachine] = useState<string>('all')
@@ -89,6 +89,10 @@ export default function TDSList() {
     currentPage * ITEMS_PER_PAGE
   )
 
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [searchQuery, selectedCustomer, selectedMachine, selectedStatus])
+
   const handleDelete = async () => {
     if (!recordToDelete) return
 
@@ -98,7 +102,9 @@ export default function TDSList() {
   }
 
   const canDelete = (record: any) => {
-    return record.status === 'Draft' && (isTechnicalOfficer() || isAdmin())
+    if (record.status !== 'Draft') return false
+    if (isAdmin()) return true
+    return isTechnicalOfficer() && record.prepared_by === user?.id
   }
 
   return (
