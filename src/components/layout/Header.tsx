@@ -9,8 +9,9 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { Badge } from '@/components/ui/badge'
-import { User, LogOut, Settings, Plus, Search, Bell } from 'lucide-react'
+import { User, LogOut, Settings, Plus, Search } from 'lucide-react'
 import { toast } from '@/components/ui/use-toast'
+import { NotificationCenter } from './NotificationCenter'
 
 export default function Header() {
   const { user, signOut, isAdmin, isTechnicalOfficer } = useAuth()
@@ -62,10 +63,7 @@ export default function Header() {
 
         {/* Right Actions */}
         <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-foreground relative rounded-full">
-            <Bell className="h-5 w-5" />
-            <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-primary rounded-full ring-2 ring-background"></span>
-          </Button>
+          <NotificationCenter />
 
           <Link to="/tds/new" className="hidden sm:block">
             <Button size="sm" className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-[0_0_15px_rgba(99,102,241,0.4)] hover:shadow-[0_0_20px_rgba(99,102,241,0.6)] transition-all rounded-full px-4">
