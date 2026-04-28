@@ -38,14 +38,20 @@ export function NotificationCenter() {
   const [open, setOpen] = useState(false)
 
   // Fetch recent activity with joined user and record data
-  const { data: notifications, isLoading } = useQuery({
+  const { data: notifications = [], isLoading } = useQuery({
     queryKey: ['global-notifications'],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('activity_log')
         .select(`
-          *,
-          user_roles!user_roles_user_id_fkey(full_name),
+          id,
+          action,
+          field_name,
+          old_value,
+          new_value,
+          timestamp,
+          user_id,
+          tds_record_id,
           tds_records(order_number)
         `)
         .order('timestamp', { ascending: false })
@@ -53,13 +59,37 @@ export function NotificationCenter() {
 
       if (error) throw error
 
+      const userIds = Array.from(
+        new Set((data || []).map((item) => item.user_id).filter(Boolean) as string[])
+      )
+      const fullNameByUserId = new Map<string, string>()
+
+      if (userIds.length > 0) {
+        const { data: users, error: usersError } = await supabase
+          .from('user_roles')
+          .select('user_id, full_name')
+          .in('user_id', userIds)
+
+        if (usersError) {
+          console.warn('Unable to load notification user names:', usersError)
+        } else {
+          ;(users || []).forEach((user) => {
+            if (user.full_name) {
+              fullNameByUserId.set(user.user_id, user.full_name)
+            }
+          })
+        }
+      }
+
       return (data || []).map(item => ({
         ...item,
-        full_name: (item.user_roles as any)?.full_name,
+        full_name: item.user_id ? fullNameByUserId.get(item.user_id) : undefined,
         order_number: (item.tds_records as any)?.order_number
       })) as ActivityLogExtended[]
     },
-    refetchInterval: 30000
+    enabled: open,
+    staleTime: 60 * 1000,
+    refetchInterval: open ? 60 * 1000 : false,
   })
 
   const getNotificationIcon = (action: string) => {
@@ -101,7 +131,7 @@ export function NotificationCenter() {
           className="text-muted-foreground hover:text-foreground relative rounded-full transition-all hover:bg-white/5 active:scale-95"
         >
           <Bell className="h-5 w-5" />
-          {notifications && notifications.length > 0 && (
+          {notifications.length > 0 && (
             <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-primary rounded-full ring-2 ring-[#09090b] animate-pulse"></span>
           )}
         </Button>
@@ -132,7 +162,7 @@ export function NotificationCenter() {
               <div className="h-5 w-5 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
               <p className="text-[10px] text-muted-foreground uppercase tracking-widest">Loading Feed...</p>
             </div>
-          ) : notifications && notifications.length > 0 ? (
+          ) : notifications.length > 0 ? (
             <div className="divide-y divide-white/5">
               {notifications.map((notif) => (
                 <div

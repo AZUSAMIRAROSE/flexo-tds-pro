@@ -1,82 +1,99 @@
-import { useEffect, useState, useCallback } from 'react'
-import type { User, Session } from '@supabase/supabase-js'
+import { useEffect } from 'react'
+import type { User } from '@supabase/supabase-js'
 import { supabase } from '@/lib/supabase'
 import type { UserRoleType } from '@/types/tds.types'
+import { useAuthStore, type AuthUser } from '@/store/authStore'
 
-export interface AuthUser extends User {
-  roles?: UserRoleType[]
-  fullName?: string
+let authInitPromise: Promise<void> | null = null
+let authSubscription: { unsubscribe: () => void } | null = null
+
+function toAuthUser(authUser: User, roles: UserRoleType[] = []): AuthUser {
+  return {
+    ...authUser,
+    roles,
+    fullName: authUser.user_metadata?.full_name || authUser.email?.split('@')[0] || 'User',
+  }
+}
+
+async function fetchUserWithRoles(authUser: User) {
+  try {
+    const { data: roles, error } = await supabase
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', authUser.id)
+
+    if (error) throw error
+
+    const userRoles = (roles ?? []).map((r: { role: string }) => r.role as UserRoleType)
+    useAuthStore.getState().setUser(toAuthUser(authUser, userRoles))
+  } catch (error) {
+    console.error('Error fetching user roles:', error)
+    useAuthStore.getState().setUser(toAuthUser(authUser))
+  } finally {
+    useAuthStore.getState().setLoading(false)
+  }
+}
+
+function initializeAuth() {
+  if (authInitPromise) return authInitPromise
+
+  authInitPromise = (async () => {
+    if (!authSubscription) {
+      const {
+        data: { subscription },
+      } = supabase.auth.onAuthStateChange((_event, currentSession) => {
+        const store = useAuthStore.getState()
+        store.setSession(currentSession)
+
+        if (currentSession?.user) {
+          void fetchUserWithRoles(currentSession.user)
+        } else {
+          store.reset()
+        }
+      })
+
+      authSubscription = subscription
+    }
+
+    const {
+      data: { session: currentSession },
+    } = await supabase.auth.getSession()
+
+    useAuthStore.getState().setSession(currentSession)
+
+    if (currentSession?.user) {
+      await fetchUserWithRoles(currentSession.user)
+    } else {
+      useAuthStore.getState().setLoading(false)
+    }
+  })().catch((error) => {
+    console.error('Error initializing auth:', error)
+    useAuthStore.getState().reset()
+    authInitPromise = null
+  })
+
+  return authInitPromise
 }
 
 export function useAuth() {
-  const [user, setUser] = useState<AuthUser | null>(null)
-  const [session, setSession] = useState<Session | null>(null)
-  const [loading, setLoading] = useState(true)
-
-  const fetchUserWithRoles = useCallback(async (authUser: User) => {
-    try {
-      const { data: roles } = await supabase
-        .from('user_roles')
-        .select('role')
-        .eq('user_id', authUser.id);
-
-      const userRoles = (roles ?? []).map((r: { role: string }) => r.role as UserRoleType);
-      
-      setUser({
-        ...authUser,
-        roles: userRoles,
-        fullName: authUser.user_metadata?.full_name || authUser.email?.split('@')[0] || 'User',
-      });
-    } catch (error) {
-      console.error('Error fetching user roles:', error);
-      setUser({
-        ...authUser,
-        roles: [],
-        fullName: authUser.user_metadata?.full_name || authUser.email?.split('@')[0] || 'User',
-      });
-    } finally {
-      setLoading(false)
-    }
-  }, [])
+  const { user, session, isLoading: loading, setLoading, reset } = useAuthStore()
 
   useEffect(() => {
-    // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session)
-      if (session?.user) {
-        fetchUserWithRoles(session.user)
-      } else {
-        setLoading(false)
-      }
-    })
-
-    // Listen for auth changes (login, logout, token refresh, password recovery)
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session)
-      if (session?.user) {
-        fetchUserWithRoles(session.user)
-      } else {
-        setUser(null)
-        setLoading(false)
-      }
-    })
-
-    return () => subscription.unsubscribe()
-  }, [fetchUserWithRoles])
-
-  // ─── Auth Actions ────────────────────────────────────────────
+    void initializeAuth()
+  }, [])
 
   const signIn = async (email: string, password: string) => {
+    setLoading(true)
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
     })
+    if (error) setLoading(false)
     return { data, error }
   }
 
   const signUp = async (email: string, password: string, fullName: string) => {
+    setLoading(true)
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
@@ -86,6 +103,7 @@ export function useAuth() {
         },
       },
     })
+    if (error || !data.session) setLoading(false)
     return { data, error }
   }
 
@@ -106,15 +124,15 @@ export function useAuth() {
   const signOut = async () => {
     const { error } = await supabase.auth.signOut()
     if (!error) {
-      setUser(null)
-      setSession(null)
+      reset()
     }
     return { error }
   }
 
   const refreshRoles = async () => {
-    if (user) {
-      await fetchUserWithRoles(user)
+    const currentSession = useAuthStore.getState().session
+    if (currentSession?.user) {
+      await fetchUserWithRoles(currentSession.user)
     }
   }
 
