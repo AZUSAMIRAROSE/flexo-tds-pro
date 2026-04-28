@@ -39,6 +39,7 @@ export function QualitySection() {
     formData.adhesion_test,
     formData.rub_scuff_test,
     formData.ink_lay_tone_check,
+    updateField,
   ])
 
   const qualityTests = [

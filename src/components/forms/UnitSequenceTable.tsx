@@ -1,26 +1,17 @@
-import React, { useCallback, useState } from 'react'
+import React, { useState } from 'react'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { BatchCodeInput } from './BatchCodeInput'
 import { PlateTapeSelect } from './PlateTapeSelect'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
 import { useTDSFormStore } from '@/stores/tdsFormStore'
 import { Plus, Trash2, ArrowLeftRight } from 'lucide-react'
 import { toast } from '@/components/ui/use-toast'
-import { TDSUnit } from '@/types/tds.types'
+import type { TDSUnit } from '@/types/tds.types'
 
 export function UnitSequenceTable() {
   const { units, updateUnit, addUnit, removeUnit } = useTDSFormStore()
-  const [expandedUnit, setExpandedUnit] = useState<number | null>(null)
 
   const [pasteMode, setPasteMode] = useState(false)
   const [pasteData, setPasteData] = useState('')

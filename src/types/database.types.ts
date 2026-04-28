@@ -6,7 +6,7 @@ export type Json =
   | { [key: string]: Json | undefined }
   | Json[]
 
-export interface Database {
+export type Database = {
   public: {
     Tables: {
       customers: {
@@ -34,6 +34,7 @@ export interface Database {
           created_by?: string | null
           updated_at?: string
         }
+        Relationships: []
       }
       machines: {
         Row: {
@@ -63,6 +64,15 @@ export interface Database {
           created_at?: string
           updated_at?: string
         }
+        Relationships: [
+          {
+            foreignKeyName: "machines_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          }
+        ]
       }
       tds_records: {
         Row: {
@@ -191,6 +201,22 @@ export interface Database {
           created_at?: string
           updated_at?: string
         }
+        Relationships: [
+          {
+            foreignKeyName: "tds_records_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tds_records_machine_id_fkey"
+            columns: ["machine_id"]
+            isOneToOne: false
+            referencedRelation: "machines"
+            referencedColumns: ["id"]
+          }
+        ]
       }
       tds_units: {
         Row: {
@@ -247,6 +273,15 @@ export interface Database {
           created_at?: string
           updated_at?: string
         }
+        Relationships: [
+          {
+            foreignKeyName: "tds_units_tds_record_id_fkey"
+            columns: ["tds_record_id"]
+            isOneToOne: false
+            referencedRelation: "tds_records"
+            referencedColumns: ["id"]
+          }
+        ]
       }
       activity_log: {
         Row: {
@@ -279,6 +314,15 @@ export interface Database {
           new_value?: string | null
           timestamp?: string
         }
+        Relationships: [
+          {
+            foreignKeyName: "activity_log_tds_record_id_fkey"
+            columns: ["tds_record_id"]
+            isOneToOne: false
+            referencedRelation: "tds_records"
+            referencedColumns: ["id"]
+          }
+        ]
       }
       user_roles: {
         Row: {
@@ -299,6 +343,7 @@ export interface Database {
           assigned_by?: string | null
           assigned_at?: string
         }
+        Relationships: []
       }
     }
     Views: {

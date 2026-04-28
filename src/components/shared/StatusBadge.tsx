@@ -1,5 +1,5 @@
 import { Badge } from '@/components/ui/badge'
-import { TDSStatus, OverallResult } from '@/types/tds.types'
+import { type TDSStatus, type OverallResult } from '@/types/tds.types'
 
 interface StatusBadgeProps {
   status: TDSStatus

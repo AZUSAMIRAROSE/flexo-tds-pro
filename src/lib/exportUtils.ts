@@ -1,6 +1,6 @@
 import JSZip from 'jszip'
 import { saveAs } from 'file-saver'
-import { TDSRecordWithRelations } from '@/types/tds.types'
+import type { TDSRecordWithRelations } from '@/types/tds.types'
 import { formatDate } from './utils'
 
 type CellValue = string | number | null | undefined
@@ -311,7 +311,6 @@ function appendSingleRowMerges(
 }
 
 function cloneEmptyUnitRow(
-  xmlDoc: Document,
   namespaceUri: string | null,
   templateRow: Element,
   newRowNumber: number
@@ -351,7 +350,7 @@ function resizeUnitTable(xmlDoc: Document, namespaceUri: string | null, unitCoun
 
     for (let offset = 1; offset <= rowDelta; offset += 1) {
       const newRowNumber = UNIT_TEMPLATE_END_ROW + offset
-      const clonedRow = cloneEmptyUnitRow(xmlDoc, namespaceUri, templateRow, newRowNumber)
+      const clonedRow = cloneEmptyUnitRow(namespaceUri, templateRow, newRowNumber)
       sheetData.insertBefore(clonedRow, firstRowAfterTemplate)
       appendSingleRowMerges(xmlDoc, namespaceUri, templateMergeRows, newRowNumber)
     }

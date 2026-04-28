@@ -13,7 +13,7 @@ import {
   ShadingType,
 } from 'docx'
 import { saveAs } from 'file-saver'
-import { TDSRecordWithRelations } from '@/types/tds.types'
+import type { TDSRecordWithRelations } from '@/types/tds.types'
 import { formatDate } from './utils'
 
 export async function generateWordDocument(data: TDSRecordWithRelations): Promise<Blob> {

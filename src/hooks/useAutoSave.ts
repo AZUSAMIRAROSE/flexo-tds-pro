@@ -8,7 +8,7 @@ export function useAutoSave(tdsId: string | undefined, enabled: boolean = true) 
   const updateMutation = useUpdateTDS()
   const lastSavedRef = useRef<string>('')
   const isSavingRef = useRef(false)
-  const autoSaveTimeoutRef = useRef<NodeJS.Timeout>()
+  const autoSaveTimeoutRef = useRef<NodeJS.Timeout | undefined>(undefined)
 
   // Debounce form data changes (1000ms - increased for better stability)
   const debouncedFormData = useDebounce(formData, 1000)
@@ -23,6 +23,11 @@ export function useAutoSave(tdsId: string | undefined, enabled: boolean = true) 
 
     const autoSave = async () => {
       isSavingRef.current = true
+      
+      // Capture the modification timestamp BEFORE we start saving.
+      // If this changes by the time save completes, the user made new edits.
+      const modifiedAtBeforeSave = useTDSFormStore.getState()._lastModifiedAt
+      
       try {
         // Strip nested relations to prevent schema errors
         const { customer, machine, units: _units, ...cleanFormData } = debouncedFormData as any
@@ -35,7 +40,14 @@ export function useAutoSave(tdsId: string | undefined, enabled: boolean = true) 
         })
         
         lastSavedRef.current = currentSnapshot
-        markClean()
+        
+        // Smart markClean: only mark clean if the user did NOT make
+        // additional changes while the save was in-flight.
+        const modifiedAtAfterSave = useTDSFormStore.getState()._lastModifiedAt
+        if (modifiedAtAfterSave === modifiedAtBeforeSave) {
+          markClean()
+        }
+        // else: user changed something during save — stay dirty for next cycle
       } catch (error) {
         console.error('Auto-save failed:', error)
         // Don't mark clean on error so it retries
@@ -57,7 +69,8 @@ export function useAutoSave(tdsId: string | undefined, enabled: boolean = true) 
         clearTimeout(autoSaveTimeoutRef.current)
       }
     }
-  }, [debouncedFormData, debouncedUnits, tdsId, enabled, isDirty, updateMutation])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [debouncedFormData, debouncedUnits, tdsId, enabled, isDirty])
 
   return {
     isSaving: updateMutation.isPending || isSavingRef.current,

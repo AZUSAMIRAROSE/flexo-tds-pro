@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
-import { Machine, MachineInsert, MachineUpdate, MachineWithCustomer } from '@/types/tds.types'
+import type { MachineInsert, MachineUpdate, MachineWithCustomer } from '@/types/tds.types'
 import { toast } from '@/components/ui/use-toast'
 
 export function useMachines(customerId?: string) {

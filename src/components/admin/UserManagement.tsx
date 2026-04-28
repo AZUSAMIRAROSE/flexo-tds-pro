@@ -155,7 +155,7 @@ export function UserManagement() {
   }
 
   const getUserRoles = (userId: string) => {
-    return userRoles?.filter(r => r.user_id === userId).map(r => r.role) || []
+    return userRoles?.filter((r: any) => r.user_id === userId).map((r: any) => r.role) || []
   }
 
   if (isLoading) {

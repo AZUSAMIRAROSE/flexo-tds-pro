@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
-import { User, Session } from '@supabase/supabase-js'
+import type { User, Session } from '@supabase/supabase-js'
 import { supabase } from '@/lib/supabase'
-import { UserRoleType } from '@/types/tds.types'
+import type { UserRoleType } from '@/types/tds.types'
 
 export interface AuthUser extends User {
   roles?: UserRoleType[]
@@ -42,12 +42,12 @@ export function useAuth() {
 
   const fetchUserWithRoles = async (authUser: User) => {
     try {
-      const { data: roles } = await supabase
-        .from('user_roles')
+      const { data: roles } = await (supabase
+        .from('user_roles') as any)
         .select('role')
         .eq('user_id', authUser.id)
 
-      const userRoles = roles?.map(r => r.role as UserRoleType) || []
+      const userRoles = roles?.map((r: any) => r.role as UserRoleType) || []
       
       setUser({
         ...authUser,

@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
-import { Customer, CustomerInsert, CustomerUpdate } from '@/types/tds.types'
+import type { Customer, CustomerInsert, CustomerUpdate } from '@/types/tds.types'
 import { toast } from '@/components/ui/use-toast'
 
 export function useCustomers() {

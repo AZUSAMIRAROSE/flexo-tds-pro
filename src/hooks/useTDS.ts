@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
-import { 
+import type { 
   TDSRecord, 
   TDSRecordInsert, 
   TDSRecordUpdate, 
@@ -50,7 +50,7 @@ export function useTDSRecords(filters?: {
       const { data, error } = await query
 
       if (error) throw error
-      return data as TDSRecordWithRelations[]
+      return data as unknown as TDSRecordWithRelations[]
     },
   })
 }
@@ -79,7 +79,7 @@ export function useTDSRecord(id: string | undefined) {
         data.units.sort((a: any, b: any) => a.unit_no - b.unit_no)
       }
       
-      return data as TDSRecordWithRelations
+      return data as unknown as TDSRecordWithRelations
     },
     enabled: !!id,
   })
@@ -99,7 +99,7 @@ export function useCreateTDS() {
       // Create TDS record
       const { data: tdsRecord, error: recordError } = await supabase
         .from('tds_records')
-        .insert(record)
+        .insert(record as any)
         .select()
         .single()
 
@@ -114,7 +114,7 @@ export function useCreateTDS() {
 
         const { error: unitsError } = await supabase
           .from('tds_units')
-          .insert(unitsWithTdsId)
+          .insert(unitsWithTdsId as any)
 
         if (unitsError) throw unitsError
       }
@@ -184,9 +184,9 @@ export function useUpdateTDS() {
       }
 
       // Update TDS record
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from('tds_records')
-        .update(updates)
+        .update(updates as any)
         .eq('id', id)
         .select()
         .single()
@@ -203,11 +203,11 @@ export function useUpdateTDS() {
 
         if (fetchError) throw fetchError
 
-        const currentUnitIds = new Set(currentUnits?.map(u => u.id) || [])
+        const currentUnitIds = new Set(currentUnits?.map((u: any) => u.id) || [])
         const newUnitIds = new Set(unitUpdates.filter(u => u.id).map(u => u.id!))
 
         // Delete units that are no longer in the array
-        const unitsToDelete = Array.from(currentUnitIds).filter(id => !newUnitIds.has(id))
+        const unitsToDelete = Array.from(currentUnitIds).filter((id: any) => !newUnitIds.has(id)) as string[]
         if (unitsToDelete.length > 0) {
           const { error: deleteError } = await supabase
             .from('tds_units')
@@ -223,7 +223,7 @@ export function useUpdateTDS() {
             // Update existing unit
             const { error: unitError } = await supabase
               .from('tds_units')
-              .update(unit)
+              .update(unit as any)
               .eq('id', unit.id)
 
             if (unitError) throw unitError
@@ -234,7 +234,7 @@ export function useUpdateTDS() {
               .insert({
                 ...unit,
                 tds_record_id: id,
-              })
+              } as any)
 
             if (insertError) throw insertError
           }
@@ -266,16 +266,19 @@ export function useUpdateTDS() {
         (updatedRecord as any).units.sort((a: any, b: any) => a.unit_no - b.unit_no)
       }
 
-      return updatedRecord as TDSRecordWithRelations
+      return updatedRecord as unknown as TDSRecordWithRelations
     },
     onSuccess: (data, variables) => {
-      // Update query cache with new data
+      // Update single-record cache with fresh data
       queryClient.setQueryData(['tds-records', variables.id], data)
       
-      // Invalidate related queries
-      queryClient.invalidateQueries({ queryKey: ['tds-records'] })
-      
-      if (!variables.isAutoSave) {
+      if (variables.isAutoSave) {
+        // Auto-save: ONLY update cache silently. 
+        // DO NOT invalidateQueries — that triggers a refetch which can 
+        // overwrite the user's in-progress form edits.
+      } else {
+        // Manual save: full cache invalidation + user feedback
+        queryClient.invalidateQueries({ queryKey: ['tds-records'] })
         toast({
           title: 'TDS updated',
           description: 'TDS record has been successfully updated.',
@@ -306,7 +309,7 @@ export function useUpdateTDSStatus() {
 
       const { data, error } = await supabase
         .from('tds_records')
-        .update(updates)
+        .update(updates as any)
         .eq('id', id)
         .select()
         .single()
@@ -383,8 +386,8 @@ export function useBatchCodeSuggestions(query: string) {
       if (error) throw error
       
       // Group by batch code and count usage
-      const grouped = data.reduce((acc, item) => {
-        const existing = acc.find(x => x.batch_code === item.batch_code)
+      const grouped = data.reduce((acc: any[], item: any) => {
+        const existing = acc.find((x: any) => x.batch_code === item.batch_code)
         if (existing) {
           existing.usage_count = (existing.usage_count || 0) + 1
         } else {

@@ -1,6 +1,7 @@
 import React from 'react'
-import { Document, Page, Text, View, StyleSheet, Font, pdf } from '@react-pdf/renderer'
-import { TDSRecordWithRelations } from '@/types/tds.types'
+import { Document, Page, Text, View, StyleSheet, pdf } from '@react-pdf/renderer'
+import { saveAs } from 'file-saver'
+import type { TDSRecordWithRelations } from '@/types/tds.types'
 import { formatDate } from './utils'
 
 // Register fonts (optional, for better quality)
@@ -329,9 +330,9 @@ const TDSPDFDocument: React.FC<TDSPDFDocumentProps> = ({ data }) => (
           <View
             style={[
               styles.statusBadge,
-              data.overall_result === 'Pass' && styles.statusCompleted,
-              data.overall_result === 'Fail' && { backgroundColor: '#FEE2E2', color: '#991B1B' },
-              data.overall_result === 'Conditional' && { backgroundColor: '#FEF3C7', color: '#92400E' },
+              data.overall_result === 'Pass' ? styles.statusCompleted : {},
+              data.overall_result === 'Fail' ? { backgroundColor: '#FEE2E2', color: '#991B1B' } : {},
+              data.overall_result === 'Conditional' ? { backgroundColor: '#FEF3C7', color: '#92400E' } : {},
             ]}
           >
             <Text>{data.overall_result || 'Conditional'}</Text>

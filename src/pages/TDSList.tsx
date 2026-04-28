@@ -68,7 +68,7 @@ export default function TDSList() {
   const filteredRecords = useMemo(() => {
     if (!allRecords) return []
 
-    return allRecords.filter((record) => {
+    return allRecords.filter((record: any) => {
       const matchesSearch = searchQuery === '' || 
         record.order_number.toLowerCase().includes(searchQuery.toLowerCase()) ||
         record.customer?.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -139,7 +139,7 @@ export default function TDSList() {
                     id="search"
                     placeholder="Order, Customer, Machine..."
                     value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchQuery(e.target.value)}
                     className="pl-9 bg-background/50 border-white/10 focus-visible:ring-primary/50"
                   />
                 </div>
@@ -154,7 +154,7 @@ export default function TDSList() {
                   </SelectTrigger>
                   <SelectContent className="glass-modal border-white/10">
                     <SelectItem value="all">All Customers</SelectItem>
-                    {customers?.map((customer) => (
+                    {customers?.map((customer: any) => (
                       <SelectItem key={customer.id} value={customer.id}>
                         {customer.name}
                       </SelectItem>
@@ -172,7 +172,7 @@ export default function TDSList() {
                   </SelectTrigger>
                   <SelectContent className="glass-modal border-white/10">
                     <SelectItem value="all">All Machines</SelectItem>
-                    {machines?.map((machine) => (
+                    {machines?.map((machine: any) => (
                       <SelectItem key={machine.id} value={machine.id}>
                         {machine.machine_code}
                       </SelectItem>
@@ -255,7 +255,7 @@ export default function TDSList() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {paginatedRecords.map((record) => (
+                    {paginatedRecords.map((record: any) => (
                       <TableRow key={record.id} className="border-white/5 hover:bg-white/[0.02] transition-colors">
                         <TableCell>
                           <span className="font-mono text-sm px-2 py-1 bg-white/5 rounded border border-white/10 text-foreground">
@@ -282,7 +282,7 @@ export default function TDSList() {
                           <RowActions
                             record={record}
                             canDelete={canDelete(record)}
-                            onDelete={(recordId) => {
+                            onDelete={(recordId: string) => {
                               setRecordToDelete(recordId)
                               setDeleteDialogOpen(true)
                             }}

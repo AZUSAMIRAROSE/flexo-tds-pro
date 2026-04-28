@@ -67,7 +67,7 @@ export function BatchCodeInput({
             </div>
           ) : (
             <div className="py-1">
-              {suggestions.map((suggestion, index) => (
+              {suggestions.map((suggestion: any, index: number) => (
                 <button
                   key={`${suggestion.batch_code}-${index}`}
                   type="button"

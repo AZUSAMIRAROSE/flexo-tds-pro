@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '@/hooks/useAuth'
 import { useTDSRecord, useCreateTDS, useUpdateTDS, useUpdateTDSStatus } from '@/hooks/useTDS'
@@ -21,7 +21,6 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { StatusBadge } from '@/components/shared/StatusBadge'
@@ -42,7 +41,7 @@ export default function TDSEditor() {
   const { user, isAdmin, isTechnicalOfficer } = useAuth()
   const isNew = !id
 
-  const { formData, units, setFormData, setUnits, resetForm, isDirty, markClean, initData } = useTDSFormStore()
+  const { formData, units, setFormData, updateField, resetForm, isDirty, markClean, initData } = useTDSFormStore()
   const { data: tdsRecord, isLoading } = useTDSRecord(id)
   const { data: customers } = useCustomers()
   const { data: allMachines } = useMachines()
@@ -52,35 +51,45 @@ export default function TDSEditor() {
   const statusMutation = useUpdateTDSStatus()
 
   const [saving, setSaving] = useState(false)
-  const [selectedCustomerId, setSelectedCustomerId] = useState<string>('')
   const [activeSubTab, setActiveSubTab] = useState('job')
 
   const { exportToExcel, exportToPDF, exportToWord, exporting } = useExport(id || '')
 
   // Filter machines by selected customer
-  const machines = allMachines?.filter(m => m.customer_id === selectedCustomerId) || []
+  const machines = allMachines?.filter(m => m.customer_id === formData.customer_id) || []
 
-  // Load existing TDS data - but don't override if there are unsaved changes
+  // Gate: only initialize form data ONCE per mount/record.
+  // Prevents auto-save refetch cycle from overwriting user input.
+  const initializedRef = useRef(false)
+
+  // Load existing TDS data ONCE when record arrives, or set defaults for new
   useEffect(() => {
-    if (tdsRecord && !isDirty) {
-      // Only reinitialize if not dirty (no unsaved changes)
+    if (initializedRef.current) return // Already initialized — never overwrite
+
+    if (tdsRecord) {
       initData(tdsRecord, tdsRecord.units || [])
-      setSelectedCustomerId(tdsRecord.customer_id || '')
-    } else if (isNew && !isDirty) {
-      resetForm()
-      // Initialize with default units based on machine selection
-      const defaultUnits = Array.from({ length: formData.num_units || 10 }, (_, i) => ({
+      initializedRef.current = true
+    } else if (isNew) {
+      const defaultUnitCount = 10
+      const defaultUnits = Array.from({ length: defaultUnitCount }, (_, i) => ({
         unit_no: i + 1,
         anilox_unit: 'LPI',
         volume_unit: 'CCM',
       }))
-      initData(formData, defaultUnits as any)
+      initData({ status: 'Draft', num_units: defaultUnitCount }, defaultUnits as any)
+      initializedRef.current = true
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tdsRecord, isNew])
 
+  // Cleanup: reset form and initialization gate when leaving
+  useEffect(() => {
     return () => {
+      initializedRef.current = false
       if (isNew) resetForm()
     }
-  }, [tdsRecord, isNew, isDirty])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isNew])
 
 
 
@@ -93,6 +102,8 @@ export default function TDSEditor() {
         machine_id: machineId,
         num_units: machine.default_unit_count,
       })
+    } else {
+      updateField('machine_id', machineId)
     }
   }
 
@@ -109,7 +120,7 @@ export default function TDSEditor() {
         return
       }
 
-      if (!selectedCustomerId) {
+      if (!formData.customer_id) {
         toast({
           variant: 'destructive',
           title: 'Validation Error',
@@ -123,7 +134,7 @@ export default function TDSEditor() {
 
       const dataToSave = {
         ...cleanFormData,
-        customer_id: selectedCustomerId,
+        customer_id: formData.customer_id,
         prepared_by: user?.id,
       }
 
@@ -170,7 +181,7 @@ export default function TDSEditor() {
     return formData.status === 'Draft' && (isTechnicalOfficer() || isAdmin())
   }
 
-  const { isSaving: autoSaving, lastSaved } = useAutoSave(id, canEdit())
+  const { isSaving: autoSaving } = useAutoSave(id, canEdit())
 
   if (isLoading) {
     return (
@@ -325,7 +336,7 @@ export default function TDSEditor() {
               <TabsTrigger value="activity" className="data-[state=active]:bg-primary/20 data-[state=active]:text-primary px-6 py-2.5 rounded-md font-semibold tracking-wide text-sm transition-all">SYSTEM LOG</TabsTrigger>
             </TabsList>
 
-            <TabsContent value="form" className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <TabsContent value="form" className="space-y-6">
               {/* Header Section */}
             <div className="glass-panel border-primary/20 p-4 md:p-6 space-y-4 relative overflow-hidden rounded-xl">
               <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3"></div>
@@ -344,9 +355,8 @@ export default function TDSEditor() {
                   <div className="space-y-1.5">
                     <Label className="label-caps text-muted-foreground text-[10px]">Client Identifier</Label>
                     <Select
-                      value={selectedCustomerId}
+                      value={formData.customer_id || ''}
                       onValueChange={(value) => {
-                        setSelectedCustomerId(value)
                         setFormData({ ...formData, customer_id: value, machine_id: undefined })
                       }}
                       disabled={!canEdit()}
@@ -369,7 +379,7 @@ export default function TDSEditor() {
                     <Select
                       value={formData.machine_id || ''}
                       onValueChange={handleMachineChange}
-                      disabled={!selectedCustomerId || !canEdit()}
+                      disabled={!formData.customer_id || !canEdit()}
                     >
                       <SelectTrigger className="bg-background/50 border-white/10 h-10 w-full">
                         <SelectValue placeholder="Assign Hardware" />
@@ -446,7 +456,7 @@ export default function TDSEditor() {
               </div>
             </TabsContent>
 
-            <TabsContent value="activity" className="glass-panel p-6 border-white/5 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <TabsContent value="activity" className="glass-panel p-6 border-white/5">
               {!isNew && <ActivityLog tdsRecordId={id!} />}
             </TabsContent>
           </Tabs>

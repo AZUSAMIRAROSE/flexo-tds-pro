@@ -49,7 +49,7 @@ import {
 } from '@/components/ui/table'
 import { Card, CardContent } from '@/components/ui/card'
 import { Plus, Edit, Trash2, Loader2, Settings } from 'lucide-react'
-import { MachineWithCustomer } from '@/types/tds.types'
+import type { MachineWithCustomer } from '@/types/tds.types'
 
 const machineSchema = z.object({
   customer_id: z.string().min(1, 'Customer is required'),

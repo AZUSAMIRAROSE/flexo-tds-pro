@@ -1,10 +1,11 @@
 import { create } from 'zustand'
-import { TDSRecordWithRelations, TDSUnit } from '@/types/tds.types'
+import type { TDSRecordWithRelations, TDSUnit } from '@/types/tds.types'
 
 interface TDSFormState {
   formData: Partial<TDSRecordWithRelations>
   units: TDSUnit[]
   isDirty: boolean
+  _lastModifiedAt: number
   
   setFormData: (data: Partial<TDSRecordWithRelations>) => void
   updateField: (field: string, value: any) => void
@@ -21,12 +22,13 @@ export const useTDSFormStore = create<TDSFormState>((set) => ({
   formData: {},
   units: [],
   isDirty: false,
+  _lastModifiedAt: 0,
 
   setFormData: (data) =>
     set((state) => {
-      const newState: any = { formData: data, isDirty: true }
+      const newState: any = { formData: data, isDirty: true, _lastModifiedAt: Date.now() }
       
-      if (data.num_units !== undefined && data.num_units !== state.units.length) {
+      if (data.num_units !== undefined && data.num_units !== null && data.num_units !== state.units.length) {
         const newCount = data.num_units
         const currentUnits = state.units
         
@@ -54,6 +56,7 @@ export const useTDSFormStore = create<TDSFormState>((set) => ({
       const newState = {
         formData: { ...state.formData, [field]: value },
         isDirty: true,
+        _lastModifiedAt: Date.now(),
       } as Partial<TDSFormState>
 
       // If num_units changed, synchronize units array
@@ -83,13 +86,13 @@ export const useTDSFormStore = create<TDSFormState>((set) => ({
     }),
 
   setUnits: (units) =>
-    set({ units, isDirty: true }),
+    set({ units, isDirty: true, _lastModifiedAt: Date.now() }),
 
   updateUnit: (index, updates) =>
     set((state) => {
       const newUnits = [...state.units]
       newUnits[index] = { ...newUnits[index], ...updates }
-      return { units: newUnits, isDirty: true }
+      return { units: newUnits, isDirty: true, _lastModifiedAt: Date.now() }
     }),
 
   addUnit: () =>
@@ -106,7 +109,8 @@ export const useTDSFormStore = create<TDSFormState>((set) => ({
       return { 
         units: newUnits, 
         formData: { ...state.formData, num_units: newUnits.length },
-        isDirty: true 
+        isDirty: true,
+        _lastModifiedAt: Date.now(),
       }
     }),
 
@@ -119,6 +123,7 @@ export const useTDSFormStore = create<TDSFormState>((set) => ({
         units: renumberedUnits,
         formData: { ...state.formData, num_units: renumberedUnits.length },
         isDirty: true,
+        _lastModifiedAt: Date.now(),
       }
     }),
 
